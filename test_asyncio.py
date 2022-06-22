@@ -33,14 +33,19 @@ pgm_name_kr = '업비트 Ticker 웹소켓'
 async def upbit_ws_client(q,target):
     try:
         while True:
-            if 'list_coins' in target.keys():
-                break
+            if ('list_coins' in target.keys()) and (len(target) >= 4):
+                if len(set(target['list_coins']) - set(target.keys()[3:])) == 0:
+                    break
+        # if subcribe_items != target['list_coins']
+        # while True:
+        #     if 'list_coins' in target.keys():
+        #         break
         # 구독 데이터 조회
         # subscribe_items = get_subscribe_items()
         if len(target.keys()) < 4:
             subscribe_items = ['KRW-BTC']
         else:
-            subscribe_items = list(target.keys())[3:]
+            subscribe_items = target['list_coins']
         print(f'websocket 조회종목 : {subscribe_items}')
 
         # 구독 데이터 조립
@@ -62,9 +67,10 @@ async def upbit_ws_client(q,target):
 
             while True:
                 period = datetime.now().date()
-                if (len(target.keys()) >= 4):
-                    if (subscribe_items != list(target.keys())[3:]):
-                        await upbit_ws_client(q, target)
+                if subscribe_items != target['list_coins']:
+                # if (len(target.keys()) >= 4):
+                #     if (subscribe_items != list(target.keys())[3:]):
+                    await upbit_ws_client(q, target)
                 data = await websocket.recv()
                 data = json.loads(data)
                 q.put(data)
@@ -73,7 +79,7 @@ async def upbit_ws_client(q,target):
     # 모든 함수의 공통 부분(Exception 처리)
     # ----------------------------------------
     except Exception as e:
-        logging.error('Exception Raised!')
+        logging.error('Exception Raised! upbit_ws_client')
         logging.error(e)
         logging.error('Connect Again!')
 
@@ -91,7 +97,7 @@ async def main_websocket(q,target):
         await upbit_ws_client(q,target)
 
     except Exception as e:
-        logging.error('Exception Raised!')
+        logging.error('Exception Raised! main_websocket')
         logging.error(e)
 
 
@@ -110,17 +116,16 @@ async def main_target(target, logger):
         making_trading_variables = wait_trading_variables(target)
         await asyncio.gather(making_target, making_trading_variables)
     except Exception as e:
-        logging.error('Exception Raised!')
+        logging.error('Exception Raised! main_target')
         logging.error(e)
 
 
 async def wait_trading_target(target, logger):
-
     while True:
         time1 = datetime.now()
         # time2 = (time1 + relativedelta(days=0)).replace(hour=10,minute=15,second=0)
-        time2 = (time1 + relativedelta(days=0)).replace(hour=12,minute=39,second=0)
-        # time2 = time1 + relativedelta(seconds=10)
+        # time2 = (time1 + relativedelta(days=0)).replace(hour=12,minute=39,second=0)
+        time2 = time1 + relativedelta(seconds=10)
         await asyncio.sleep((time2 - time1).total_seconds())
         # print('Define Trading Target')
         # print('wait_target', )
@@ -130,6 +135,8 @@ async def wait_trading_target(target, logger):
         else:
             for code_coin in target['list_coins']:
                 target[code_coin] = define_trading_target(code_coin,target['value_per_trade'])
+        for coin_del in list(set(target.keys()[3:]) - set(target['list_coins'])):
+            del (target[coin_del])
         logger.log(20, f'Define Trading Target\n{target}')
 
         # print('Define Trading Target\n', target)
@@ -147,7 +154,7 @@ async def wait_trading_variables(target):
 
 def define_trading_target(code_coin, value):
     df_candle = pyupbit.get_ohlcv(code_coin, count=10)
-
+    # nonetype을 가져오는 경우가 있는것으로 보임. 값을 잘못가져오면 list에서 제외하기.
     # range 계산
     price_range = np.array(df_candle['high'] - df_candle['low'])[-2]
 
@@ -168,6 +175,11 @@ async def run_trading(real, target, qlog):
     while True:
         if not 'list_coins' in target.keys():
             continue
+        if len(target) >= 4:
+            if not len(set(target['list_coins']) - set(target.keys()[3:])) == 0:
+                continue
+        # if not 'list_coins' in target.keys():
+        #     continue
         if not 'list_coins' in target_copy.keys():
             target_copy = target.copy()
         if not target['list_coins'] == target_copy['list_coins']:
