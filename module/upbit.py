@@ -1,5 +1,6 @@
 import time
 import logging
+import logging.handlers
 import requests
 import jwt
 import uuid
@@ -8,6 +9,7 @@ import math
 import os
 import pandas as pd
 import numpy as np
+from threading import Thread
 
 from urllib.parse import urlencode
 from decimal import Decimal
@@ -22,10 +24,73 @@ secret_key = login_info['secret_key']
 server_url = login_info['server_url']
 line_target_url = login_info['line_target_url']
 line_token = login_info['line_token']
+ws_url = 'wss://api.upbit.com/websocket/v1'
 
 # 상수 설정
 min_order_amt = 5000
 
+class Log():
+    def __init__(self):
+        self.th = None
+
+    def get_logger(self, name):
+        return logging.getLogger(name)
+
+    def listener_start(self, file_path, name, queue):
+        self.th = Thread(target=self._proc_log_queue, args=(file_path, name, queue))
+        self.th.start()
+
+    def listener_end(self, queue):
+        queue.put(None)
+        self.th.join()
+        print('log listener end...')
+
+    def _proc_log_queue(self, file_path, name, queue):
+        self.config_log(file_path, name)
+        logger = self.get_logger(name)
+        while True:
+            try:
+                record = queue.get()
+                if record is None:
+                    break
+                logger.handle(record)
+            except Exception:
+                import sys, traceback
+                print('listener problem', file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+
+    def config_queue_log(self, queue, name):
+        '''
+        if you use multiprocess logging,
+        call this in multiprocess as logging producer.
+        logging consumer function is [self.listener_start] and [self.listener_end]
+        it returns logger and you can use this logger to log
+        '''
+        qh = logging.handlers.QueueHandler(queue)
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(qh)
+        return logger
+
+    def config_log(self, file_path, name):
+        '''
+        it returns FileHandler and StreamHandler logger
+        if you do not need to use multiprocess logging,
+        just call this function and use returned logger.
+        '''
+        # create logger, assign handler
+        timedfilehandler = logging.handlers.TimedRotatingFileHandler(filename='./logs/log', when='midnight', interval=1, encoding='utf-8')
+        formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+        timedfilehandler.setFormatter(formatter)
+        timedfilehandler.suffix = "%Y%m%d"
+
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(timedfilehandler)
+        # logger.addHandler(fh_err)
+        # logger.addHandler(fh_dbg)
+        # logger.addHandler(sh)
+        return logger
 
 # -----------------------------------------------------------------------------
 # - Name : set_loglevel
@@ -49,6 +114,7 @@ def set_loglevel(level):
                 datefmt='%Y/%m/%d %I:%M:%S %p',
                 level=logging.DEBUG
             )
+
         # ---------------------------------------------------------------------
         # 로그레벨 : ERROR
         # ---------------------------------------------------------------------
