@@ -135,6 +135,7 @@ async def wait_trading_target(target, logger):
         else:
             for code_coin in target['list_coins']:
                 target[code_coin] = define_trading_target(code_coin,target['value_per_trade'])
+                time.sleep(0.1)
         for coin_del in list(set(target.keys()[3:]) - set(target['list_coins'])):
             del (target[coin_del])
         logger.log(20, f'Define Trading Target\n{target}')

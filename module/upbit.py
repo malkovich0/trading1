@@ -1258,7 +1258,7 @@ def send_line_message(message):
 
         response = requests.post(line_target_url, headers=headers, data=data)
 
-        logging.debug(response)
+        # logging.debug(response)
 
         return response
 
