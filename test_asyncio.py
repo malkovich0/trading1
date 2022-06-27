@@ -15,38 +15,40 @@ import pickle
 import pandas as pd
 import numpy as np
 
-# 실행 환경에 따른 공통 모듈 Import
-# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from module import upbit
 
-# 프로그램 정보
-pgm_name = 'websocket'
-pgm_name_kr = '업비트 Ticker 웹소켓'
+# -----------------------------------------------------------------------------
+# - Name : main_websocket
+# - Desc : 실시간 자료 수집함수
+# -----------------------------------------------------------------------------
+def producer1(q,target, qlog):
+    logger = upbit.Log().config_queue_log(qlog, 'websocket')
+    asyncio.run(main_websocket(q,target,logger))
 
-# upbit.set_loglevel_presetting()
-# upbit.set_loglevel('D')
+async def main_websocket(q,target,logger):
+    try:
+        # 웹소켓 시작
+        await upbit_ws_client(q,target,logger)
+
+    except Exception as e:
+        logger.log(40,'Exception Raised! main_websocket')
+        logger.log(40,e)
 
 # -----------------------------------------------------------------------------
 # - Name : upbit_ws_client
 # - Desc : 업비트 웹소켓
 # -----------------------------------------------------------------------------
-async def upbit_ws_client(q,target):
+async def upbit_ws_client(q,target,logger):
     try:
+        logger.log(20, 'target 대기 준......')
+        upbit.send_line_message('target 대기 중......')
         while True:
             if ('list_coins' in target.keys()) and (len(target) >= 4):
                 if len(set(target['list_coins']) - set(target.keys()[3:])) == 0:
                     break
-        # if subcribe_items != target['list_coins']
-        # while True:
-        #     if 'list_coins' in target.keys():
-        #         break
-        # 구독 데이터 조회
-        # subscribe_items = get_subscribe_items()
-        if len(target.keys()) < 4:
-            subscribe_items = ['KRW-BTC']
-        else:
-            subscribe_items = target['list_coins']
-        print(f'websocket 조회종목 : {subscribe_items}')
+        subscribe_items = target['list_coins']
+        logger.log(20,f'websocket 조회종목({len(subscribe_items)}) : {subscribe_items}')
+        upbit.send_line_message(f'websocket 조회종목({len(subscribe_items)}) : {subscribe_items}')
 
         # 구독 데이터 조립
         subscribe_fmt = [
@@ -62,14 +64,9 @@ async def upbit_ws_client(q,target):
         subscribe_data = json.dumps(subscribe_fmt)
 
         async with websockets.connect(upbit.ws_url) as websocket:
-
             await websocket.send(subscribe_data)
-
             while True:
-                period = datetime.now().date()
                 if subscribe_items != target['list_coins']:
-                # if (len(target.keys()) >= 4):
-                #     if (subscribe_items != list(target.keys())[3:]):
                     await upbit_ws_client(q, target)
                 data = await websocket.recv()
                 data = json.loads(data)
@@ -79,56 +76,54 @@ async def upbit_ws_client(q,target):
     # 모든 함수의 공통 부분(Exception 처리)
     # ----------------------------------------
     except Exception as e:
-        logging.error('Exception Raised! upbit_ws_client')
-        logging.error(e)
-        logging.error('Connect Again!')
+        logger.log(40,'Exception Raised! upbit_ws_client')
+        logger.log(40,e)
+        logger.log(40,'Connect Again!')
 
         # 웹소켓 다시 시작
         await upbit_ws_client(q,target)
 
-
 # -----------------------------------------------------------------------------
-# - Name : main
-# - Desc : 메인
+# - Name : main_target
+# - Desc : 거래대상 생성 함수
 # -----------------------------------------------------------------------------
-async def main_websocket(q,target):
-    try:
-        # 웹소켓 시작
-        await upbit_ws_client(q,target)
-
-    except Exception as e:
-        logging.error('Exception Raised! main_websocket')
-        logging.error(e)
-
-
-def producer1(q,target):
-
-    asyncio.run(main_websocket(q,target))
-
 def producer2(target, qlog):
-    logger = upbit.Log().config_queue_log(qlog, 'mp')
+    logger = upbit.Log().config_queue_log(qlog, 'target')
     asyncio.run(main_target(target, logger))
-
 
 async def main_target(target, logger):
     try:
+        making_trading_variables = wait_trading_variables(target, logger)
         making_target = wait_trading_target(target, logger)
-        making_trading_variables = wait_trading_variables(target)
-        await asyncio.gather(making_target, making_trading_variables)
+        await asyncio.gather(making_trading_variables, making_target)
     except Exception as e:
-        logging.error('Exception Raised! main_target')
-        logging.error(e)
+        logger.log(40, 'Exception Raised! main_target')
+        logger.log(40, e)
 
+async def wait_trading_variables(target, logger):
+    while True:
+        with open('./info/trade_info.pickle', 'rb') as handle:
+            trade_info = pickle.load(handle)
+        if target['STATUS'] != trade_info['STATUS']:
+            target['STATUS'] = trade_info['STATUS']
+            logger.log(20, f"STATUS 재정의 : {target['STATUS']} -> {trade_info['STATUS']}")
+        if (len(set(target['list_coins'])-set(trade_info['list_coin_code']))!=0)or(len(set(trade_info['list_coin_code'])-set(target['list_coins']))!=0):
+            target['list_coins'] = trade_info['list_coin_code']
+            logger.log(20, f"list_coins 재정의 : {target['list_coins']} -> {trade_info['list_coin_code']}")
+        if target['value_per_trade'] != trade_info['value_per_trade']:
+            target['value_per_trade'] = trade_info['value_per_trade']
+            logger.log(20, f"value_per_trade 재정의 : {target['value_per_trade']} -> {trade_info['value_per_trade']}")
+        await asyncio.sleep(30)
 
 async def wait_trading_target(target, logger):
     while True:
         time1 = datetime.now()
-        # time2 = (time1 + relativedelta(days=0)).replace(hour=10,minute=15,second=0)
-        # time2 = (time1 + relativedelta(days=0)).replace(hour=12,minute=39,second=0)
-        time2 = time1 + relativedelta(seconds=10)
+        time2 = (time1 + relativedelta(days=1)).replace(hour=9,minute=10,second=0)
+        # time2 = (time1 + relativedelta(days=0)).replace(hour=12,minute=33,second=0)
+        # time2 = time1 + relativedelta(seconds=300)
+        logger.log(20, f'다음 target 설정 시간 : {time2}')
+        upbit.send_line_message(f'다음 target 설정 시간 : {time2}')
         await asyncio.sleep((time2 - time1).total_seconds())
-        # print('Define Trading Target')
-        # print('wait_target', )
         if len(target) == 0:
             await asyncio.sleep(1)
             continue
@@ -138,24 +133,11 @@ async def wait_trading_target(target, logger):
                 time.sleep(0.1)
         for coin_del in list(set(target.keys()[3:]) - set(target['list_coins'])):
             del (target[coin_del])
-        logger.log(20, f'Define Trading Target\n{target}')
-
-        # print('Define Trading Target\n', target)
-
-async def wait_trading_variables(target):
-    while True:
-        with open('./info/trade_info.pickle', 'rb') as handle:
-            trade_info = pickle.load(handle)
-        target['STATUS'] = trade_info['STATUS']
-        target['list_coins'] = trade_info['list_coin_code']
-        target['value_per_trade'] = trade_info['value_per_trade']
-        # print('wait_var\n',target )
-        logging.info(target)
-        await asyncio.sleep(30)
+        logger.log(20, f'Trading Target 정의\n{target}')
+        upbit.send_line_message(f'Trading Target 정의\n{target}')
 
 def define_trading_target(code_coin, value):
     df_candle = pyupbit.get_ohlcv(code_coin, count=10)
-    # nonetype을 가져오는 경우가 있는것으로 보임. 값을 잘못가져오면 list에서 제외하기.
     # range 계산
     price_range = np.array(df_candle['high'] - df_candle['low'])[-2]
 
@@ -168,33 +150,32 @@ def define_trading_target(code_coin, value):
     trading_target_temp = [code_coin, datetime.today().date(), target_price, value_order, 'buy', 0, np.nan, np.nan]
     return trading_target_temp
 
-
-async def run_trading(real, target, qlog):
+# -----------------------------------------------------------------------------
+# - Name : run_trading
+# - Desc : 거래 실행 함수
+# -----------------------------------------------------------------------------
+def run_trading(real, target, qlog):
     # time.sleep(5)
-    logger = upbit.Log().config_queue_log(qlog, 'mp')
+    logger = upbit.Log().config_queue_log(qlog, 'trading')
+    logger.log(20, "거래실행")
+    upbit.send_line_message("거래실행")
     target_copy = target.copy()
+    upbit_api = pyupbit.Upbit(upbit.access_key, upbit.secret_key)
     while True:
         if not 'list_coins' in target.keys():
             continue
+        if not target['STATUS']:
+            print('--------------\n종료\n--------------')
+            logger.log(20, '--------------\n종료\n--------------')
+            sys.exit()
         if len(target) >= 4:
             if not len(set(target['list_coins']) - set(target.keys()[3:])) == 0:
                 continue
-        # if not 'list_coins' in target.keys():
-        #     continue
         if not 'list_coins' in target_copy.keys():
             target_copy = target.copy()
         if not target['list_coins'] == target_copy['list_coins']:
-            print(f'target 변경\n{target}\n{target_copy}')
-            logger.log(20, f'target 변경\n{target}')
+            logger.log(20, f'target 변경\n변경전 : {target}\n변경후 : {target_copy}')
         target_copy = target.copy()
-
-        # if not target == None:
-        #     await asyncio.sleep(5)
-        #     print('run\n',target)
-            # print('길이 : ',real.qsize())
-        if not target['STATUS']:
-            print('--------------\n종료\n--------------')
-            sys.exit()
         data = real.get()
         if data['ty'] == 'trade':
             if data['cd'] in target.keys():
@@ -202,61 +183,57 @@ async def run_trading(real, target, qlog):
                 if target_coin[5]:
                     continue
                 if target_coin[2] <= data['tp']:
-                    remaining_asset = upbit.get_krwbal()
+                    remaining_asset = upbit_api.get_balance('KRW')
                     order_value = target_coin[3]
-                    if order_value > remaining_asset['available_krw']:
+                    if order_value > remaining_asset:
                         logger.log(20,f'잔고부족으로 주문 미실행\n{target_coin}')
                         upbit.send_line_message(f'잔고부족으로 주문 미실행\n{target_coin}')
                         continue
                     # rtn_buying_tg = upbit.buycoin_tg(target_coin[0], target_coin[3], target_coin[2])
                     logger.log(20,f'주문실행\n{target_coin}')
                     upbit.send_line_message(f'주문실행\n{target_coin}')
-                    target_coin[5] = 1
                     # target에 주문실행됐다고 coin의 status에 yes로 표시.
-
-        # logger.log(10,data)
-        # logging.info(data)
-        # trading_target 주기적으로 가져오기. / 파일이 없으면 주기적으로 반복.
-        # print(trading_target)
-        # print('run trade vol')
-        # run_trade_vol_strategy(data)
-
+                    target_coin[5] = 1
+                    target[data['cd']] = target_coin
 
 # -----------------------------------------------------------------------------
 # - Name : main
 # - Desc : 메인
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
+    qlog = mp.Queue()
+    listener = upbit.Log()
+    listener.listener_start('test', 'listener', qlog)
+    logger = upbit.Log().config_queue_log(qlog, 'main')
 
-    # noinspection PyBroadException
     try:
-
         # ---------------------------------------------------------------------
         # Logic Start!
         # ---------------------------------------------------------------------
         # 웹소켓 시작
+        logger.log(20, 'Main 실행')
+        upbit.send_line_message('Main 실행')
         real = mp.Queue()
         manager = mp.Manager()
+        target = manager.dict({'STATUS':1,'list_coins':[],'value_per_trade':0})
 
-        qlog = mp.Queue()
-        listener = upbit.Log()
-        listener.listener_start('test','listener',qlog)
-
-        target = manager.dict()
-        p1 = mp.Process(name="Price_Receiver", target=producer1, args=(real,target,), daemon=True)
+        p1 = mp.Process(name="Price_Receiver", target=producer1, args=(real,target,qlog), daemon=True)
         p1.start()
+        logger.log(20, 'Websocket Process 실행')
         p2 = mp.Process(name="Target_Receiver", target=producer2, args=(target,qlog), daemon=True)
         p2.start()
+        logger.log(20, 'target Process 실행')
 
-        asyncio.run(run_trading(real, target, qlog))
-        # run_trading(real, target)
+        # asyncio.run(run_trading(real, target, qlog))
+        run_trading(real, target, qlog)
+        logger.log(20, 'trading Process 실행')
 
     except KeyboardInterrupt:
-        logging.error("KeyboardInterrupt Exception 발생!")
-        logging.error(traceback.format_exc())
+        logger.log(40,"KeyboardInterrupt Exception 발생!")
+        logger.log(40, traceback.format_exc())
         sys.exit(-100)
 
     except Exception:
-        logging.error("Exception 발생!")
-        logging.error(traceback.format_exc())
+        logger.log(40, "Exception 발생!")
+        logger.log(40, traceback.format_exc())
         sys.exit(-200)
