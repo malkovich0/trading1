@@ -21,14 +21,14 @@ from module import upbit
 # - Name : main_websocket
 # - Desc : 실시간 자료 수집함수
 # -----------------------------------------------------------------------------
-def producer1(q,target, qlog):
+def producer1(q,target, target_sell, qlog):
     logger = upbit.Log().config_queue_log(qlog, 'websocket')
-    asyncio.run(main_websocket(q,target,logger))
+    asyncio.run(main_websocket(q,target, target_sell, logger))
 
-async def main_websocket(q,target,logger):
+async def main_websocket(q,target,target_sell,logger):
     try:
         # 웹소켓 시작
-        await upbit_ws_client(q,target,logger)
+        await upbit_ws_client(q,target,target_sell,logger)
 
     except Exception as e:
         logger.log(40,'Exception Raised! main_websocket')
@@ -38,7 +38,7 @@ async def main_websocket(q,target,logger):
 # - Name : upbit_ws_client
 # - Desc : 업비트 웹소켓
 # -----------------------------------------------------------------------------
-async def upbit_ws_client(q,target,logger):
+async def upbit_ws_client(q,target,target_sell,logger):
     try:
         logger.log(20, 'target 대기 중......')
         upbit.send_line_message('target 대기 중......')
@@ -46,7 +46,8 @@ async def upbit_ws_client(q,target,logger):
             if ('list_coins' in target.keys()) and (len(target) >= 4):
                 if len(set(target['list_coins']) - set(target.keys()[3:])) == 0:
                     break
-        subscribe_items = target['list_coins']
+        subscribe_items = target['list_coins'] + list(target_sell.keys())
+        subscribe_items = list(dict.fromkeys(subscribe_items)) # 순서 유지한채 중복 제거
         logger.log(20,f'websocket 조회종목({len(subscribe_items)}) : {subscribe_items}')
         upbit.send_line_message(f'websocket 조회종목({len(subscribe_items)}) : {subscribe_items}')
 
@@ -87,15 +88,16 @@ async def upbit_ws_client(q,target,logger):
 # - Name : main_target
 # - Desc : 거래대상 생성 함수
 # -----------------------------------------------------------------------------
-def producer2(target, qlog):
+def producer2(target, target_sell, qlog):
     logger = upbit.Log().config_queue_log(qlog, 'target')
-    asyncio.run(main_target(target, logger))
+    asyncio.run(main_target(target, target_sell, logger))
 
-async def main_target(target, logger):
+async def main_target(target, target_sell, logger):
     try:
         making_trading_variables = wait_trading_variables(target, logger)
         making_target = wait_trading_target(target, logger)
-        await asyncio.gather(making_trading_variables, making_target)
+        making_target_sell = wait_trading_target_sell(target_sell, logger)
+        await asyncio.gather(making_trading_variables, making_target, making_target_sell)
     except Exception as e:
         logger.log(40, 'Exception Raised! main_target')
         logger.log(40, e)
@@ -114,6 +116,25 @@ async def wait_trading_variables(target, logger):
             target['value_per_trade'] = trade_info['value_per_trade']
             logger.log(20, f"value_per_trade 재정의 : {target['value_per_trade']} -> {trade_info['value_per_trade']}")
         await asyncio.sleep(30)
+
+async def wait_trading_target_sell(target_sell, logger):
+# # 특정 시간이면 전일 보유 종목 전부 매도
+    while True
+        time1_sell = datetime.now()
+        if int(time1_sell.strftime("%H%M%S")) < 100000:
+            time2_sell = (time1_sell + relativedelta(days=0)).replace(hour=10, minute=0, second=0)
+        else:
+            time2_sell = (time1_sell + relativedelta(days=1)).replace(hour=10,minute=0,second=0)
+        await asyncio.sleep((time2_sell - time1_sell).total_seconds())
+        balances = upbit_api.get_balances()
+        for coin in balances:
+            if coin['currency'] in ['KRW','CPT']:
+                continue
+            else:
+                coin_name = f'{coin["unit_currency"]}-{coin["currency"]}'
+                target_sell[coin_name] = coin['balance']
+        logger.log(20,f'매도 대상 : {target_sell}')
+        upbit.send_line_message(f'매도 대상 : {target_sell}')
 
 async def wait_trading_target(target, logger):
     while True:
@@ -182,8 +203,8 @@ async def main_order(logger):
     upbit_api = pyupbit.Upbit(upbit.access_key_pc, upbit.secret_key_pc)
 
     dict_order = {'start_time':datetime.now()}
-    rtn_wait_order = upbit_api.get_order_list(state='wait')  # 함수 생성 필요
-    rtn_done_order = upbit_api.get_order_list(state='done')  # 함수 생성 필요
+    rtn_wait_order = upbit_api.get_order_list(state='wait')
+    rtn_done_order = upbit_api.get_order_list(state='done')
     rtn_order = rtn_wait_order + rtn_done_order
     if len(rtn_order) == 0:
         pass
@@ -199,12 +220,13 @@ async def reset_daily_order(upbit_api, logger):
     target_hour = 9
     while True:
         time_now = datetime.now()
-        # 특정 시간이면 미체결 주문 전부 취소
+        # 특정 시간이면 미체결 매수 주문 전부 취소
         if (time_now.replace(hour=target_hour, minute=0, second=0) < time_now) & (time_now.replace(hour=target_hour, minute=10, second=0) > time_now):
-            rtn_wait_order = upbit_api.get_order_list(side='ask') # get_order_list 함수 만들어서 추가하기.
-            # rtn_wait_order = upbit.get_order_list('buy','wait')  # 미체결 맞는지 확인. 함수변경필요
+            rtn_wait_order = upbit_api.get_order_list(state='wait') # get_order_list 함수 만들어서 추가하기.
             if len(rtn_wait_order) != 0:
                 for each_order in rtn_wait_order:
+                    if each_order['side'] == 'ask'  # 매도주문은 제외 (ask : 매도, bid : 매수)
+                        continue
                     rtn_order_cancel = upbit_api.cancel_order(each_order['uuid'])
                     logger.log(20, rtn_order_cancel)
                     upbit.send_line_message(f"미체결 주문 취소 : {rtn_order_cancel['market']}")
@@ -212,6 +234,14 @@ async def reset_daily_order(upbit_api, logger):
                 logger.log(20, '미체결 주문 없음')
                 upbit.send_line_message('미체결 주문 없음', time_now)
             await asyncio.sleep(600)
+        # # 특정 시간이면 전일 보유 종목 전부 매도
+        # elif (time_now.replace(hour=10, minute=0, second=0) < time_now) & (time_now.replace(hour=10, minute=10, second=0) > time_now):
+        #     balances = upbit_api.get_balances()
+        #     for coin in balances:
+        #         if coin['currency'] in ['KRW','CPT']:
+        #             continue
+        #         else:
+        #
         else:
             await asyncio.sleep(60)
 
@@ -249,7 +279,9 @@ async def manage_call_order(upbit_api, dict_order, logger):
         rtn_order_temp = rtn_wait_order_temp + rtn_done_order_temp
         for order_temp in rtn_order_temp:
             if order_temp['uuid'] in dict_order.keys():
-                if order_temp['remaining_volume'] != dict_order[order_temp['uuid']][4]:
+                if float(order_temp['remaining_volume']) != float(dict_order[order_temp['uuid']][4]):
+                    print(order_temp['remaining_volume'])
+                    print(dict_order[order_temp['uuid']][4])
                     dict_order[order_temp['uuid']][4] = order_temp['remaining_volume']
                     logger.log(20, f"주문 체결 \n {order_temp}")
                     upbit.send_line_message(f"체결내용 저장, {order_temp['market']}, {order_temp['volume']}, {order_temp['remaining_volume']}")
@@ -267,7 +299,7 @@ async def manage_call_order(upbit_api, dict_order, logger):
 # - Name : run_trading
 # - Desc : 거래 실행 함수
 # -----------------------------------------------------------------------------
-def run_trading(real, target, qlog):
+def run_trading(real, target, target_sell, qlog):
     # time.sleep(5)
     logger = upbit.Log().config_queue_log(qlog, 'trading')
     logger.log(20, "거래실행")
@@ -335,13 +367,15 @@ if __name__ == "__main__":
         logger.log(20, 'Main 실행')
         upbit.send_line_message('Main 실행')
         real = mp.Queue()
-        manager = mp.Manager()
-        target = manager.dict({'STATUS':1,'list_coins':[],'value_per_trade':0})
+        manager1 = mp.Manager()
+        target = manager1.dict({'STATUS':1,'list_coins':[],'value_per_trade':0})
+        manager2 = mp.Manager()
+        target_sell = manager2.dict()
 
-        p1 = mp.Process(name="Price_Receiver", target=producer1, args=(real,target,qlog), daemon=True)
+        p1 = mp.Process(name="Price_Receiver", target=producer1, args=(real,target,target_sell,qlog), daemon=True)
         p1.start()
         logger.log(20, 'Websocket Process 실행')
-        p2 = mp.Process(name="Target_Receiver", target=producer2, args=(target,qlog), daemon=True)
+        p2 = mp.Process(name="Target_Receiver", target=producer2, args=(target,target_sell,qlog), daemon=True)
         p2.start()
         logger.log(20, 'target Process 실행')
         p3 = mp.Process(name="Order_Manager", target=producer3, args=(qlog,), daemon=True)
@@ -349,7 +383,7 @@ if __name__ == "__main__":
         logger.log(20, 'Order Process 실행')
 
         # asyncio.run(run_trading(real, target, qlog))
-        run_trading(real, target, qlog)
+        run_trading(real, target, target_sell, qlog)
         logger.log(20, 'trading Process 실행')
 
     except KeyboardInterrupt:
@@ -358,7 +392,7 @@ if __name__ == "__main__":
         p1.terminate()
         p2.terminate()
         p3.terminate()
-        sys.exit(-100)
+        sys.exit(1)
 
     except Exception:
         logger.log(40, "Exception 발생!")
@@ -366,4 +400,4 @@ if __name__ == "__main__":
         p1.terminate()
         p2.terminate()
         p3.terminate()
-        sys.exit(-200)
+        sys.exit(2)
