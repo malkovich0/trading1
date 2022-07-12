@@ -21,6 +21,8 @@ with open('./info/login_info.pickle','rb') as handle:
     login_info = pickle.load(handle)
 access_key = login_info['access_key']
 secret_key = login_info['secret_key']
+access_key_pc = login_info['access_key_pc']
+secret_key_pc = login_info['secret_key_pc']
 server_url = login_info['server_url']
 line_target_url = login_info['line_target_url']
 line_token = login_info['line_token']
