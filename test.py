@@ -129,7 +129,7 @@ async def wait_trading_target(target, logger):
             time3 = (time1 + relativedelta(days=1)).replace(hour=10,minute=0,second=0)
 
         # code가 중간에 종료되어 재실행된 경우 저장된 target그대로 가져오기.
-        if os.path.isfile(file_target):
+        if (os.path.isfile(file_target))&(len(target)<=4):
             logger.log(20,f'저장된 target 가져오기\n{file_target}')
             upbit.send_line_message(f'저장된 target 가져오기\n{file_target}')
             with open(file_target, 'rb') as handle:
@@ -231,7 +231,6 @@ def run_trading(qreal, target, qlog):
             sys.exit()
         # status에 따른 주문을 별도의 함수로 구성.
         if (target['STATUS'] == 1)or(target['STATUS'] == 11):
-            target['STATUS'] = 0
             print('미체결 종목 취소 실행')
             logger.log(20, '미체결 종목 취소 실행')
             upbit.send_line_message('미체결 종목 취소 실행')
@@ -245,8 +244,9 @@ def run_trading(qreal, target, qlog):
                         print(f'미체결 종목 취소\n{rtn_order_cancel}')
                         logger.log(20, f'미체결 종목 취소\n{rtn_order_cancel}')
                         upbit.send_line_message(f'미체결 종목 취소\n{rtn_order_cancel}')
-        if (target['STATUS'] == 2)or(target['STATUS'] == 12):
+                        time.sleep(0.1)
             target['STATUS'] = 0
+        if (target['STATUS'] == 2)or(target['STATUS'] == 12):
             print('보유종목 전량 매도')
             logger.log(20, '보유종목 전량 매도')
             upbit.send_line_message('보유종목 전량 매도')
@@ -259,6 +259,8 @@ def run_trading(qreal, target, qlog):
                     logger.log(20, f'보유종목 매도\n{rtn_order_sell}')
                     upbit.send_line_message(f'보유종목 매도\n{rtn_order_sell}')
                     print('매도주문 실행')
+                    time.sleep(0.1)
+            target['STATUS'] = 0
         # qreal에 값이 들어올때까지 여기서 대기하다가 값 들어오면 그 다음 실행함.
         data = qreal.get()
         if (int(datetime.now().strftime('%H%M%S'))>=90000)&(int(datetime.now().strftime('%H%M%S'))<=100100):
@@ -286,6 +288,7 @@ def run_trading(qreal, target, qlog):
                     upbit.send_line_message(f'주문실행 \n{rtn_order_buy}')
                     target_coin[5] = 1
                     target[data['cd']] = target_coin
+                    time.sleep(0.1)
                     print('target 저장')
                     time1 = datetime.now()
                     if int(time1.strftime("%H%M%S")) < 91000:
