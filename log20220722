@@ -1,0 +1,56 @@
+2022-07-22 03:10:31,561 trading INFO 매수주문실행
+['KRW-AAVE', '220721', 126800.0, 200000, 'buy', 0, nan, nan]
+2022-07-22 09:00:05,947 trading INFO 매수주문실행
+['KRW-DKA', '220721', 64.80000000000001, 200000, 'buy', 0, nan, nan]
+2022-07-22 10:00:03,035 main INFO main 실행
+2022-07-22 10:00:03,134 main INFO Websocket Process 실행
+2022-07-22 10:00:03,138 main INFO target Process 실행
+2022-07-22 10:00:03,138 main INFO 거래실행
+2022-07-22 10:00:03,138 main ERROR Exception 발생!
+2022-07-22 10:00:03,140 main ERROR Traceback (most recent call last):
+  File "trade.py", line 306, in <module>
+    run_trading(qreal, target, qlog)
+  File "trade.py", line 214, in run_trading
+    upbit_api = pyupbit.Upbit(upbit.access_key_pc, upbit.secret_key_pc)
+AttributeError: module 'module.upbit' has no attribute 'access_key_pc'
+
+2022-07-22 10:00:04,436 target INFO *****매도목적 잔고조회결과*****
+[{'currency': 'KRW', 'balance': '970515.265', 'locked': '0.0', 'avg_buy_price': '0', 'avg_buy_price_modified': True, 'unit_currency': 'KRW'}, {'currency': 'CPT', 'balance': '485.0', 'locked': '0.0', 'avg_buy_price': '9.47', 'avg_buy_price_modified': False, 'unit_currency': 'KRW'}, {'currency': 'ETH', 'balance': '0.01', 'locked': '0.0', 'avg_buy_price': '2947000', 'avg_buy_price_modified': False, 'unit_currency': 'KRW'}]
+2022-07-22 10:00:04,635 target INFO *****매도 저장*****
+KRW-ETH, 0.01
+2022-07-22 10:00:04,641 target INFO *****매도 대상***** : {'KRW-ETH': '0.01'}
+2022-07-22 10:00:05,055 target INFO *****target_sell 대기***** 
+대기완료시간 : 2022-07-23 10:00:00.036019
+대기시간[분] : 1439.9166666666667
+2022-07-22 10:03:07,764 main INFO main 실행
+2022-07-22 10:03:07,837 main INFO Websocket Process 실행
+2022-07-22 10:03:07,841 main INFO target Process 실행
+2022-07-22 10:03:07,841 main INFO 거래실행
+2022-07-22 10:03:07,842 websocket INFO websocket 실행
+2022-07-22 10:03:07,847 target INFO target 실행
+2022-07-22 10:03:07,851 target INFO 다음 target까지 대기
+target 실행시간 : 2022-07-23 09:10:00.850037
+2022-07-22 10:03:07,851 target ERROR Exception Raised!
+2022-07-22 10:03:07,851 target ERROR 'STATS'
+2022-07-22 10:06:33,963 main INFO main 실행
+2022-07-22 10:06:34,037 main INFO Websocket Process 실행
+2022-07-22 10:06:34,040 main INFO target Process 실행
+2022-07-22 10:06:34,041 main INFO 거래실행
+2022-07-22 10:06:34,043 websocket INFO websocket 실행
+2022-07-22 10:06:34,047 target INFO target 실행
+2022-07-22 10:06:34,050 target INFO list_coins 재정의 : ['KRW-BTC', 'KRW-ETH', 'KRW-NEO', 'KRW-MTL', 'KRW-XRP', 'KRW-ETC', 'KRW-OMG', 'KRW-SNT', 'KRW-WAVES', 'KRW-XEM', 'KRW-QTUM', 'KRW-LSK', 'KRW-STEEM', 'KRW-XLM', 'KRW-ARDR', 'KRW-ARK', 'KRW-STORJ', 'KRW-GRS', 'KRW-REP', 'KRW-ADA', 'KRW-SBD', 'KRW-POWR', 'KRW-BTG', 'KRW-ICX', 'KRW-EOS', 'KRW-TRX', 'KRW-SC', 'KRW-ONT', 'KRW-ZIL', 'KRW-POLY', 'KRW-ZRX', 'KRW-LOOM', 'KRW-BCH', 'KRW-BAT', 'KRW-IOST', 'KRW-RFR', 'KRW-CVC', 'KRW-IQ', 'KRW-IOTA', 'KRW-MFT', 'KRW-ONG', 'KRW-GAS', 'KRW-UPP', 'KRW-ELF', 'KRW-KNC', 'KRW-BSV', 'KRW-THETA', 'KRW-QKC', 'KRW-BTT', 'KRW-MOC', 'KRW-ENJ', 'KRW-TFUEL', 'KRW-MANA', 'KRW-ANKR', 'KRW-AERGO', 'KRW-ATOM', 'KRW-TT', 'KRW-CRE', 'KRW-MBL', 'KRW-WAXP', 'KRW-HBAR', 'KRW-MED', 'KRW-MLK', 'KRW-STPT', 'KRW-ORBS', 'KRW-VET', 'KRW-CHZ', 'KRW-STMX', 'KRW-DKA', 'KRW-HIVE', 'KRW-KAVA', 'KRW-AHT', 'KRW-LINK', 'KRW-XTZ', 'KRW-BORA', 'KRW-JST', 'KRW-CRO', 'KRW-TON', 'KRW-SXP', 'KRW-HUNT', 'KRW-PLA', 'KRW-DOT', 'KRW-SRM', 'KRW-MVL', 'KRW-STRAX', 'KRW-AQT', 'KRW-GLM', 'KRW-SSX', 'KRW-META', 'KRW-FCT2', 'KRW-CBK', 'KRW-SAND', 'KRW-HUM', 'KRW-DOGE', 'KRW-STRK', 'KRW-PUNDIX', 'KRW-FLOW', 'KRW-DAWN', 'KRW-AXS', 'KRW-STX', 'KRW-XEC', 'KRW-SOL', 'KRW-MATIC', 'KRW-NU', 'KRW-AAVE', 'KRW-1INCH', 'KRW-ALGO', 'KRW-NEAR', 'KRW-WEMIX', 'KRW-AVAX', 'KRW-T', 'KRW-CELO', 'KRW-GMT'] -> ['KRW-BTC', 'KRW-ETH', 'KRW-NEO', 'KRW-MTL', 'KRW-XRP', 'KRW-ETC', 'KRW-OMG', 'KRW-SNT', 'KRW-WAVES', 'KRW-XEM', 'KRW-QTUM', 'KRW-LSK', 'KRW-STEEM', 'KRW-XLM', 'KRW-ARDR', 'KRW-ARK', 'KRW-STORJ', 'KRW-GRS', 'KRW-REP', 'KRW-ADA', 'KRW-SBD', 'KRW-POWR', 'KRW-BTG', 'KRW-ICX', 'KRW-EOS', 'KRW-TRX', 'KRW-SC', 'KRW-ONT', 'KRW-ZIL', 'KRW-POLY', 'KRW-ZRX', 'KRW-LOOM', 'KRW-BCH', 'KRW-BAT', 'KRW-IOST', 'KRW-RFR', 'KRW-CVC', 'KRW-IQ', 'KRW-IOTA', 'KRW-MFT', 'KRW-ONG', 'KRW-GAS', 'KRW-UPP', 'KRW-ELF', 'KRW-KNC', 'KRW-BSV', 'KRW-THETA', 'KRW-QKC', 'KRW-BTT', 'KRW-MOC', 'KRW-ENJ', 'KRW-TFUEL', 'KRW-MANA', 'KRW-ANKR', 'KRW-AERGO', 'KRW-ATOM', 'KRW-TT', 'KRW-CRE', 'KRW-MBL', 'KRW-WAXP', 'KRW-HBAR', 'KRW-MED', 'KRW-MLK', 'KRW-STPT', 'KRW-ORBS', 'KRW-VET', 'KRW-CHZ', 'KRW-STMX', 'KRW-DKA', 'KRW-HIVE', 'KRW-KAVA', 'KRW-AHT', 'KRW-LINK', 'KRW-XTZ', 'KRW-BORA', 'KRW-JST', 'KRW-CRO', 'KRW-TON', 'KRW-SXP', 'KRW-HUNT', 'KRW-PLA', 'KRW-DOT', 'KRW-SRM', 'KRW-MVL', 'KRW-STRAX', 'KRW-AQT', 'KRW-GLM', 'KRW-SSX', 'KRW-META', 'KRW-FCT2', 'KRW-CBK', 'KRW-SAND', 'KRW-HUM', 'KRW-DOGE', 'KRW-STRK', 'KRW-PUNDIX', 'KRW-FLOW', 'KRW-DAWN', 'KRW-AXS', 'KRW-STX', 'KRW-XEC', 'KRW-SOL', 'KRW-MATIC', 'KRW-NU', 'KRW-AAVE', 'KRW-1INCH', 'KRW-ALGO', 'KRW-NEAR', 'KRW-WEMIX', 'KRW-AVAX', 'KRW-T', 'KRW-CELO', 'KRW-GMT']
+2022-07-22 10:06:34,051 target INFO value_per_trade 재정의 : 200000 -> 200000
+2022-07-22 10:06:34,051 target INFO 다음 target까지 대기
+target 실행시간 : 2022-07-23 09:10:00.051409
+2022-07-22 10:29:35,053 target INFO list_coins 재정의 : ['KRW-BTC', 'KRW-ETH'] -> ['KRW-BTC', 'KRW-ETH']
+2022-07-22 10:29:35,054 target INFO value_per_trade 재정의 : 20000 -> 20000
+2022-07-22 11:11:10,654 main INFO main 실행
+2022-07-22 11:11:10,877 main INFO Websocket Process 실행
+2022-07-22 11:11:10,880 main INFO target Process 실행
+2022-07-22 11:11:10,880 main INFO 거래실행
+2022-07-22 11:11:10,886 target INFO target 실행
+2022-07-22 11:11:10,886 websocket INFO websocket 실행
+2022-07-22 11:11:11,071 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-07-22 11:11:11,072 target INFO value_per_trade 재정의 : 0 -> 20000
+2022-07-22 11:11:11,072 target INFO 다음 target까지 대기
+target 실행시간 : 2022-07-23 09:10:00.072444

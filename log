@@ -1,0 +1,24 @@
+2022-07-24 09:10:00,292 target INFO 저장된 target 가져오기
+./target/target_220723.pickle
+2022-07-24 09:10:00,624 target INFO 저장된 target 가져오기
+./target/target_220723.pickle
+2022-07-24 09:10:00,791 target INFO 저장된 target 가져오기
+./target/target_220723.pickle
+2022-07-24 09:10:00,938 main ERROR Exception 발생!
+2022-07-24 09:10:00,961 main ERROR Traceback (most recent call last):
+  File "trade.py", line 323, in <module>
+    run_trading(qreal, target, qlog)
+  File "trade.py", line 234, in run_trading
+    print('미체결 종목 취소 실행')
+OSError: [Errno 5] Input/output error
+
+2022-07-24 14:37:32,288 main INFO main 실행
+2022-07-24 14:37:32,552 main INFO Websocket Process 실행
+2022-07-24 14:37:32,555 main INFO target Process 실행
+2022-07-24 14:37:32,557 main INFO 거래실행
+2022-07-24 14:37:32,559 websocket INFO websocket 실행
+2022-07-24 14:37:32,561 target INFO target 실행
+2022-07-24 14:37:32,771 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-07-24 14:37:32,772 target INFO value_per_trade 재정의 : 0 -> 20000
+2022-07-24 14:37:32,773 target INFO 다음 target까지 대기
+target 실행시간 : 2022-07-25 09:10:00.772660
