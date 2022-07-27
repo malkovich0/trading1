@@ -99,7 +99,7 @@ async def wait_trading_variables(target, logger):
         with open('./info/trade_info.pickle', 'rb') as handle:
             trade_info = pickle.load(handle)
         if target['STATUS'] != trade_info['STATUS']:
-            if target['STATUS'] >= 10:
+            if trade_info['STATUS'] >= 10:
                 logger.log(20, f"STATUS 재정의 : {target['STATUS']} -> {trade_info['STATUS']}")
                 target['STATUS'] = trade_info['STATUS']
         if (len(set(target['list_coins'])-set(trade_info['list_coin_code']))!=0)or(len(set(trade_info['list_coin_code'])-set(target['list_coins']))!=0):
@@ -223,6 +223,7 @@ def run_trading(qreal, target, qlog):
     upbit.send_line_message('거래실행')
     upbit_api = pyupbit.Upbit(upbit.access_key, upbit.secret_key)
     while True:
+        # print(datetime.now(), target['STATUS'])
         if not p1.is_alive()&p2.is_alive():
             print('child process 에러발생')
             logger.log(20, 'child process 에러발생')
@@ -245,21 +246,31 @@ def run_trading(qreal, target, qlog):
                         logger.log(20, f'미체결 종목 취소\n{rtn_order_cancel}')
                         upbit.send_line_message(f'미체결 종목 취소\n{rtn_order_cancel}')
                         time.sleep(0.1)
+            else:
+                logger.log(20, '미체결 대상 종목 없음')
+                upbit.send_line_message('미체결 대상 종목 없음')
             target['STATUS'] = 0
         if (target['STATUS'] == 2)or(target['STATUS'] == 12):
             print('보유종목 전량 매도')
             logger.log(20, '보유종목 전량 매도')
             upbit.send_line_message('보유종목 전량 매도')
-            balances = upbit_api.get_balances()
-            for balance in balances:
+            balances_raw = upbit_api.get_balances()
+            balances = []
+            for balance in balances_raw:
                 if balance['currency'] in ['KRW', 'CPT']:
                     continue
                 else:
+                    balances.append(balance)
+            if len(balances) > 0:
+                print('매도주문 실행')
+                for balance in balances:
                     rtn_order_sell = upbit_api.sell_market_order(balance['currency'],balance['balance'])
                     logger.log(20, f'보유종목 매도\n{rtn_order_sell}')
                     upbit.send_line_message(f'보유종목 매도\n{rtn_order_sell}')
-                    print('매도주문 실행')
                     time.sleep(0.1)
+            else:
+                logger.log(20, '매도 대상 종목 없음')
+                upbit.send_line_message('매도 대상 종목 없음')
             target['STATUS'] = 0
         # qreal에 값이 들어올때까지 여기서 대기하다가 값 들어오면 그 다음 실행함.
         data = qreal.get()
@@ -272,7 +283,11 @@ def run_trading(qreal, target, qlog):
                 upbit.send_line_message('child process 에러발생')
                 listener.listener_end(qlog)
                 sys.exit()
-            target_coin = target[data['cd']]
+            # list_coins를 중간에 변경하면 target에 없는 coin의 websocket이 들어올 수 있어 이를 제외.
+            if data['cd'] in target.keys():
+                target_coin = target[data['cd']]
+            else:
+                continue
             if target_coin[5]:
                 continue
             if (target_coin[2] <= data['tp']*0.999)&(target_coin[2] >= data['tp']*0.999):
