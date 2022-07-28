@@ -112,59 +112,88 @@ async def wait_trading_variables(target, logger):
 
 async def wait_trading_target(target, logger):
     while True:
-        time1 = datetime.now()
-
-        # file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
-        # time2 = datetime(2022,7,21,12,49)
-
-        if int(time1.strftime("%H%M%S")) < 91000:
-            file_target = f'./target/target_{(time1 - relativedelta(days=1)).strftime("%y%m%d")}.pickle'
-        else:
-            file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
-        if int(time1.strftime("%H%M%S")) < 91000:
-            time2 = (time1 + relativedelta(days=0)).replace(hour=9, minute=10, second=0)
-            time3 = (time1 + relativedelta(days=0)).replace(hour=10, minute=0, second=0)
-        else:
-            time2 = (time1 + relativedelta(days=1)).replace(hour=9,minute=10,second=0)
-            time3 = (time1 + relativedelta(days=1)).replace(hour=10,minute=0,second=0)
-
-        # code가 중간에 종료되어 재실행된 경우 저장된 target그대로 가져오기.
-        if (os.path.isfile(file_target))&(len(target)<=4):
-            logger.log(20,f'저장된 target 가져오기\n{file_target}')
-            upbit.send_line_message(f'저장된 target 가져오기\n{file_target}')
-            with open(file_target, 'rb') as handle:
-                target_dict = pickle.load(handle)
-                for key_target in target_dict.keys():
-                    target[key_target] = target_dict[key_target]
-                # await asyncio.sleep(60)
-                await asyncio.sleep((time2 - datetime.now()).total_seconds())
-        else:
-            logger.log(20,f'다음 target까지 대기\ntarget 실행시간 : {time2}')
-            upbit.send_line_message(f'다음 target까지 대기\ntarget 실행시간 : {time2}')
-            await asyncio.sleep((time2 - datetime.now()).total_seconds())
-            # target이 시작되면 전일 target은 전부 삭제.
-            if len(target) > 4:
-                logger.log(20, f'전일 target 삭제\n{target.keys()[4:]}')
-                upbit.send_line_message(f'전일 target 삭제\n{target.keys()[4:]}')
-                for coin_del in target.keys()[4:]:
-                    del target[coin_del]
+        time_start = datetime.now()
+        if int(time_start.strftime("%H%M%S")) < 91000:
+            time_target = (time_start - relativedelta(days=1)).replace(hour=9, minute=10, second=0)
+            file_target = f'./target/target_{time_target.strftime("%y%m%d")}.pickle'
+            time_next_target = time_start.replace(hour=9, minute=10, second=0)
+            # 9시 전에 시작되었다면, 무조건 중간에 다시시작하는 경우. (target 미정의)
+            if os.path.isfile(file_target):
+                logger.log(20, f'저장된 target 가져오기\n{file_target}')
+                upbit.send_line_message(f'저장된 target 가져오기\n{file_target}')
+                with open(file_target, 'rb') as handle:
+                    target_dict = pickle.load(handle)
+                    for key_target in target_dict.keys():
+                        target[key_target] = target_dict[key_target]
+            else:
+                logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
+                target['date'] = int(time_target.strftime("%y%m%d"))
+                logger.log(20, f'target 종목 설정 : {target["list_coins"]}')
+                upbit.send_line_message(f'target 종목 설정 : {target["list_coins"]}')
+                for code_coin in target['list_coins']:
+                    target[code_coin] = define_trading_target(code_coin, target['value_per_trade'])
                     await asyncio.sleep(0.1)
-            logger.log(20,f'target date 변경 : {time2.strftime("%y%m%d")}')
-            target['date'] = int(time2.strftime("%y%m%d"))
-            logger.log(20,f'target 종목 설정 : {target["list_coins"]}')
-            upbit.send_line_message(f'target 종목 설정 : {target["list_coins"]}')
-            for code_coin in target['list_coins']:
-                target[code_coin] = define_trading_target(code_coin,target['value_per_trade'])
-                await asyncio.sleep(0.1)
-            logger.log(20,f'target 저장\n{target}')
-            file_name = f'./target/target_{time2.strftime("%y%m%d")}.pickle'
-            with open(file_name,'wb') as handle:
-                pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
-            # 미체결종목 취소 주문 입력
+                logger.log(20, f'target 저장\n{target}')
+                with open(file_target, 'wb') as handle:
+                    pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            logger.log(20, f'다음 target 생성 시점까지 대기 : {time_next_target}')
+            await asyncio.sleep((time_next_target - datetime.now()).total_seconds())
+        elif (int(time_start.strftime("%H%M%S")) >= 91000) & (int(time_start.strftime("%H%M%S")) < 100000):
+            logger.log(20, f'미체결 주문 취소')
             target['STATUS'] = 1
-            # 매일 10시에 전량 매도 주문 입력
-            await asyncio.sleep((time3 - datetime.now()).total_seconds())
+            time_target = time_start.replace(hour=9, minute=10, second=0)
+            file_target = f'./target/target_{time_target.strftime("%y%m%d")}.pickle'
+            time_sell = time_start.replace(hour=10, minute=0, second=0)
+            if os.path.isfile(file_target):
+                logger.log(20, f'저장된 target 가져오기\n{file_target}')
+                upbit.send_line_message(f'저장된 target 가져오기\n{file_target}')
+                with open(file_target, 'rb') as handle:
+                    target_dict = pickle.load(handle)
+                    for key_target in target_dict.keys():
+                        target[key_target] = target_dict[key_target]
+            else:
+                logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
+                target['date'] = int(time_target.strftime("%y%m%d"))
+                logger.log(20, f'target 종목 설정 : {target["list_coins"]}')
+                upbit.send_line_message(f'target 종목 설정 : {target["list_coins"]}')
+                for code_coin in target['list_coins']:
+                    target[code_coin] = define_trading_target(code_coin, target['value_per_trade'])
+                    await asyncio.sleep(0.1)
+                logger.log(20, f'target 저장\n{target}')
+                with open(file_target, 'wb') as handle:
+                    pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            logger.log(20, f'보유 종목 매도 시점까지 대기 : {time_sell}')
+            await asyncio.sleep((time_sell - datetime.now()).total_seconds())
+            logger.log(20, f'보유종목 전량 매도')
             target['STATUS'] = 2
+
+        elif int(time_start.strftime("%H%M%S")) >= 100000:
+            time_target = time_start.replace(hour=9, minute=10, second=0)
+            file_target = f'./target/target_{time_target.strftime("%y%m%d")}.pickle'
+            time_next_target = (time_start + relativedelta(days=1)).replace(hour=9, minute=10, second=0)
+            if os.path.isfile(file_target):
+                logger.log(20, f'저장된 target 가져오기\n{file_target}')
+                upbit.send_line_message(f'저장된 target 가져오기\n{file_target}')
+                with open(file_target, 'rb') as handle:
+                    target_dict = pickle.load(handle)
+                    for key_target in target_dict.keys():
+                        target[key_target] = target_dict[key_target]
+            else:
+                logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
+                target['date'] = int(time_target.strftime("%y%m%d"))
+                logger.log(20, f'target 종목 설정 : {target["list_coins"]}')
+                upbit.send_line_message(f'target 종목 설정 : {target["list_coins"]}')
+                for code_coin in target['list_coins']:
+                    target[code_coin] = define_trading_target(code_coin, target['value_per_trade'])
+                    await asyncio.sleep(0.1)
+                logger.log(20, f'target 저장\n{target}')
+                with open(file_target, 'wb') as handle:
+                    pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            logger.log(20, f'다음 target 생성 시점까지 대기 : {time_next_target}')
+            await asyncio.sleep((time_next_target - datetime.now()).total_seconds())
+        else:
+            logger.log(20, '일자 잘못 설정되어 취소')
+            sys.exit()
 
 def define_trading_target(code_coin, value):
     df_candle = pyupbit.get_ohlcv(code_coin, count=30)
@@ -306,7 +335,7 @@ def run_trading(qreal, target, qlog):
                     time.sleep(0.1)
                     print('target 저장')
                     time1 = datetime.now()
-                    if int(time1.strftime("%H%M%S")) < 91000:
+                    if int(time1.strftime("%H%M%S")) < 93000:
                         file_target = f'./target/target_{(time1 - relativedelta(days=1)).strftime("%y%m%d")}.pickle'
                     else:
                         file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'

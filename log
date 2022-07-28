@@ -1,24 +1,12 @@
-2022-07-27 09:10:00,026 target INFO target date 변경 : 220727
-2022-07-27 09:10:00,045 target INFO target 종목 설정 : ['KRW-BTC', 'KRW-ETH']
-2022-07-27 09:10:03,003 target INFO target 저장
-{'STATUS': 0, 'list_coins': ['KRW-BTC', 'KRW-ETH'], 'value_per_trade': 20000, 'date': 220727, 'KRW-BTC': ['KRW-BTC', '220727', 28859500.0, 20000, 'buy', 1, nan, nan], 'KRW-ETH': ['KRW-ETH', '220727', 1999250.0, 20000, 'buy', 1, nan, nan]}
-2022-07-27 10:00:00,022 target INFO 다음 target까지 대기
-target 실행시간 : 2022-07-28 09:10:00.013753
-2022-07-27 12:52:22,842 main INFO main 실행
-2022-07-27 12:52:23,095 main INFO Websocket Process 실행
-2022-07-27 12:52:23,098 main INFO target Process 실행
-2022-07-27 12:52:23,099 main INFO 거래실행
-2022-07-27 12:52:23,102 websocket INFO websocket 실행
-2022-07-27 12:52:23,104 target INFO target 실행
-2022-07-27 12:52:23,293 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
-2022-07-27 12:52:23,294 target INFO value_per_trade 재정의 : 0 -> 20000
-2022-07-27 12:52:23,294 target INFO 저장된 target 가져오기
+2022-07-28 09:21:46,679 main INFO main 실행
+2022-07-28 09:21:46,944 main INFO Websocket Process 실행
+2022-07-28 09:21:46,946 main INFO target Process 실행
+2022-07-28 09:21:46,947 main INFO 거래실행
+2022-07-28 09:21:46,951 websocket INFO websocket 실행
+2022-07-28 09:21:46,952 target INFO target 실행
+2022-07-28 09:21:47,184 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-07-28 09:21:47,184 target INFO value_per_trade 재정의 : 0 -> 20000
+2022-07-28 09:21:47,186 target INFO 저장된 target 가져오기
 ./target/target_220727.pickle
-2022-07-27 12:52:23,313 main ERROR Exception 발생!
-2022-07-27 12:52:23,315 main ERROR Traceback (most recent call last):
-  File "trade.py", line 342, in <module>
-    run_trading(qreal, target, qlog)
-  File "trade.py", line 224, in run_trading
-    upbit_api = pyupbit.Upbit(upbit.access_key_pc, upbit.secret_key_pc)
-AttributeError: module 'module.upbit' has no attribute 'access_key_pc'
-
+2022-07-28 09:30:00,199 target INFO 다음 target까지 대기
+target 실행시간 : 2022-07-29 09:30:00.198458
