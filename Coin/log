@@ -1,0 +1,8 @@
+2022-08-03 09:10:01,666 target INFO 미체결 주문 취소
+2022-08-03 09:10:03,349 target INFO target date 변경 : 220803
+2022-08-03 09:10:03,350 target INFO target 종목 설정 : ['KRW-BTC', 'KRW-ETH']
+2022-08-03 09:10:10,880 target INFO target 저장
+{'STATUS': 1, 'list_coins': ['KRW-BTC', 'KRW-ETH'], 'value_per_trade': 20000, 'date': 220803, 'KRW-BTC': ['KRW-BTC', '220803', 31201500.0, 20000, 'buy', 1, nan, nan], 'KRW-ETH': ['KRW-ETH', '220803', 2253500.0, 20000, 'buy', 1, nan, nan]}
+2022-08-03 09:10:10,951 target INFO 보유 종목 매도 시점까지 대기 : 2022-08-03 10:00:00.460812
+2022-08-03 10:00:00,547 target INFO 보유종목 전량 매도
+2022-08-03 10:00:00,767 target INFO 다음 target 생성 시점까지 대기 : 2022-08-04 09:10:00.734464

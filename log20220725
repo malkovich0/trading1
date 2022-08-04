@@ -1,6 +1,0 @@
-2022-07-25 09:10:00,820 target INFO target date 변경 : 220725
-2022-07-25 09:10:00,834 target INFO target 종목 설정 : ['KRW-BTC', 'KRW-ETH']
-2022-07-25 09:10:02,253 target INFO target 저장
-{'STATUS': 0, 'list_coins': ['KRW-BTC', 'KRW-ETH'], 'value_per_trade': 20000, 'date': 220725, 'KRW-BTC': ['KRW-BTC', '220725', 30166500.0, 20000, 'buy', 1, nan, nan], 'KRW-ETH': ['KRW-ETH', '220725', 2178000.0, 20000, 'buy', 1, nan, nan]}
-2022-07-25 10:00:00,809 target INFO 저장된 target 가져오기
-./target/target_220725.pickle

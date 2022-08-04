@@ -10,6 +10,7 @@ import os
 import pandas as pd
 import numpy as np
 from threading import Thread
+import telegram
 
 from urllib.parse import urlencode
 from decimal import Decimal
@@ -27,6 +28,9 @@ server_url = login_info['server_url']
 line_target_url = login_info['line_target_url']
 line_token = login_info['line_token']
 ws_url = 'wss://api.upbit.com/websocket/v1'
+
+telegram_token = login_info['telegram_token']
+telegram_id = login_info['telegram_id']
 
 # 상수 설정
 min_order_amt = 5000
@@ -1270,6 +1274,26 @@ def send_line_message(message):
     except Exception:
         raise
 
+
+# -----------------------------------------------------------------------------
+# - Name : send_telegram_msg
+# - Desc : 텔레그램 메세지 전송
+# - Input
+#   1) message : 메세지
+# -----------------------------------------------------------------------------
+def send_telegram_message(message):
+    try:
+        # 텔레그램 메세지 발송
+        bot = telegram.Bot(telegram_token)
+        res = bot.sendMessage(chat_id=telegram_id, text=message)
+
+        return res
+
+    # ----------------------------------------
+    # 모든 함수의 공통 부분(Exception 처리)
+    # ----------------------------------------
+    except Exception:
+        raise
 
 
 
