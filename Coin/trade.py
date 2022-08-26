@@ -74,6 +74,7 @@ async def main_websocket(qreal,target,logger):
         # print('websocket Error')
         logger.log(40, 'Exception Raised!')
         logger.log(40,e)
+        await main_websocket(qreal, target, logger)
 
 # -----------------------------------------------------------------------------
 # - Name : main_target
@@ -231,8 +232,8 @@ def define_trading_target(code_coin, value):
     #     filter_value = 1
     # elif volume_ma[-2] < volume_minimum:
     #     filter_value = 1
-    elif volume_last < volume_minimum:
-        filter_value = 1
+    # elif volume_last < volume_minimum:
+    #     filter_value = 1
     elif price_ma[-2] > price_last:
         filter_value = 1
     #    elif volume_ma[-2] < volume_last:
@@ -423,7 +424,7 @@ def run_trading(upbit_api, qreal, target, qlog):
                 continue
             if target_coin[5]:
                 continue
-            if (target_coin[2] <= data['tp']*0.999)&(target_coin[2] >= data['tp']*0.999):
+            if (target_coin[2] <= data['tp']*1.01)&(target_coin[2] >= data['tp']*0.999):
                 remaining_asset = upbit_api.get_balance('KRW')
                 order_value = target_coin[3]
                 if order_value > remaining_asset:

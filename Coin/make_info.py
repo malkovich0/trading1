@@ -3,6 +3,7 @@ import pickle
 import pyupbit
 import time
 
+
 status = 0
 list_coin_code = ['KRW-BTC','KRW-ETH']
 # list_coin_code = ['KRW-BTC','KRW-XRP']
@@ -18,7 +19,7 @@ list_coin_code = ['KRW-BTC','KRW-ETH']
     # print(df_candle)
     # time.sleep(0.1)
 # print(list_coin_code)
-value_per_trade = 20000
+value_per_trade = 100000
 # print(len(list_coin_code_new))
 # print(list_coin_code_new)
 case_dic = {'STATUS':status,'list_coin_code':list_coin_code, 'value_per_trade':value_per_trade}
