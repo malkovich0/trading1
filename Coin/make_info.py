@@ -5,8 +5,8 @@ import time
 
 
 status = 0
-list_coin_code = ['KRW-BTC','KRW-ETH']
-# list_coin_code = ['KRW-BTC','KRW-XRP']
+# list_coin_code = ['KRW-BTC','KRW-ETH']
+list_coin_code = ['KRW-BTC','KRW-ETH','KRW-HIVE','KRW-AXS','KRW-ETC','KRW-HUNT','KRW-MVL','KRW-ADA']
 # list_coin_code =pyupbit.get_tickers('KRW')
 # list_coin_code_new = []
 # for code_coin in list_coin_code:
@@ -19,7 +19,7 @@ list_coin_code = ['KRW-BTC','KRW-ETH']
     # print(df_candle)
     # time.sleep(0.1)
 # print(list_coin_code)
-value_per_trade = 100000
+value_per_trade = 200000
 # print(len(list_coin_code_new))
 # print(list_coin_code_new)
 case_dic = {'STATUS':status,'list_coin_code':list_coin_code, 'value_per_trade':value_per_trade}

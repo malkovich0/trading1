@@ -129,6 +129,11 @@ async def wait_trading_target(target, logger):
                     target_dict = pickle.load(handle)
                     for key_target in target_dict.keys():
                         target[key_target] = target_dict[key_target]
+                for code_coin in target['list_coins']:
+                    if code_coin in target.keys():
+                        target_list_temp = target[code_coin]
+                        target_list_temp[6] = define_high_price(code_coin)
+                        target[code_coin] = target_list_temp
             else:
                 logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
                 target['date'] = int(time_target.strftime("%y%m%d"))
@@ -155,6 +160,11 @@ async def wait_trading_target(target, logger):
                     target_dict = pickle.load(handle)
                     for key_target in target_dict.keys():
                         target[key_target] = target_dict[key_target]
+                for code_coin in target['list_coins']:
+                    if code_coin in target.keys():
+                        target_list_temp = target[code_coin]
+                        target_list_temp[6] = define_high_price(code_coin)
+                        target[code_coin] = target_list_temp
             else:
                 logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
                 target['date'] = int(time_target.strftime("%y%m%d"))
@@ -170,6 +180,11 @@ async def wait_trading_target(target, logger):
             await asyncio.sleep((time_sell - datetime.now()).total_seconds())
             logger.log(20, f'보유종목 전량 매도')
             target['STATUS'] = 2
+            for code_coin in target['list_coins']:
+                if code_coin in target.keys():
+                    target_list_temp = target[code_coin]
+                    target_list_temp[6] = define_high_price(code_coin)
+                    target[code_coin] = target_list_temp
 
         # 정상작동 중 10시가 되어 여기 넘어오면 target이 이미 정의되어 있다.
         elif int(time_start.strftime("%H%M%S")) >= 100000:
@@ -178,6 +193,7 @@ async def wait_trading_target(target, logger):
             time_next_target = (time_start + relativedelta(days=1)).replace(hour=9, minute=10, second=0)
             # 프로그램 실행 중
             if len(target)>4:
+                # 현재 시점 기준으로 고가 저장하기.
                 logger.log(20, f'다음 target 생성 시점까지 대기 : {time_next_target}')
                 await asyncio.sleep((time_next_target - datetime.now()).total_seconds())
             # 프로그램 재실행
@@ -189,6 +205,11 @@ async def wait_trading_target(target, logger):
                         target_dict = pickle.load(handle)
                         for key_target in target_dict.keys():
                             target[key_target] = target_dict[key_target]
+                    for code_coin in target['list_coins']:
+                        if code_coin in target.keys():
+                            target_list_temp = target[code_coin]
+                            target_list_temp[6] = define_high_price(code_coin)
+                            target[code_coin] = target_list_temp
                 else:
                     logger.log(20, f'target date 변경 : {time_target.strftime("%y%m%d")}')
                     target['date'] = int(time_target.strftime("%y%m%d"))
@@ -207,41 +228,55 @@ async def wait_trading_target(target, logger):
             sys.exit()
 
 def define_trading_target(code_coin, value):
-    df_candle = pyupbit.get_ohlcv(code_coin, count=30)
-    # range 계산
-    price_range = np.array(df_candle['high'] - df_candle['low'])[-2]
+    while True:
+        df_candle = pyupbit.get_ohlcv(code_coin, count=30)
+        if df_candle.index[-1].strftime('%y%m%d') == datetime.now().strftime('%y%m%d'):
+            # range 계산
+            price_range = np.array(df_candle['high'] - df_candle['low'])[-2]
 
-    # k_value 정의
-    k_value = np.maximum(0.5, np.abs(df_candle['open'] - df_candle['close']) / (df_candle['high'] - df_candle['low']))[-2]
-    target_price = df_candle.close.iloc[-2] + k_value * price_range
-    value_order = value
+            # k_value 정의
+            k_value = np.maximum(0.5, np.abs(df_candle['open'] - df_candle['close']) / (df_candle['high'] - df_candle['low']))[-2]
+            target_price = df_candle.close.iloc[-2] + k_value * price_range
+            open_price = df_candle.open.iloc[-1]
+            today_high = df_candle.high.iloc[-1]
+            target_vol = 0.1
+            stoploss = 0.1  #k_value * price_range / open_price
+            if  stoploss <= target_vol:
+                value_order = value
+            else:
+                value_order = value / stoploss * target_vol
 
-    # filter 여부
-    filter_value = 0
-    noise_maximum = 0.4
-    noise_ma = cal_ma((df_candle.high - df_candle.close) / (df_candle.high - df_candle.low), method='sma', length=5)
-    volume_minimum = 100000000000
-    volume_ma = cal_ma(df_candle.value, method='sma', length=5)
-    price_last = df_candle.close[-2]
-    price_ma = cal_ma(df_candle.close, method='wma', length=8)
-    volume_last = df_candle.value[-2]
+            # value_order = value
 
-    if filter_value:
-        pass
-    # elif noise_ma[-2] < noise_maximum:
-    #     filter_value = 1
-    # elif volume_ma[-2] < volume_minimum:
-    #     filter_value = 1
-    # elif volume_last < volume_minimum:
-    #     filter_value = 1
-    elif price_ma[-2] > price_last:
-        filter_value = 1
-    #    elif volume_ma[-2] < volume_last:
-    #        return None
-    else:
-        pass
-        # 종목, 날짜, 목표가, 주문총액, 주문종류, 주문상태, 매수주문가, 스탑로스가
-    trading_target_temp = [code_coin, datetime.today().strftime("%y%m%d"), target_price, value_order, 'buy', filter_value, np.nan, np.nan]
+            # filter 여부
+            filter_value = 0
+            noise_maximum = 0.4
+            noise_ma = cal_ma((df_candle.high - df_candle.close) / (df_candle.high - df_candle.low), method='sma', length=5)
+            volume_minimum = 100000000000
+            volume_ma = cal_ma(df_candle.value, method='sma', length=5)
+            price_last = df_candle.close[-2]
+            price_ma = cal_ma(df_candle.close, method='wma', length=8)
+            volume_last = df_candle.value[-2]
+
+            if filter_value:
+                pass
+            # elif noise_ma[-2] < noise_maximum:
+            #     filter_value = 3
+            # elif volume_ma[-2] < volume_minimum:
+            #     filter_value = 3
+            # elif volume_last < volume_minimum:
+            #     filter_value = 3
+            elif price_ma[-2] > price_last:
+                filter_value = 3
+            #    elif volume_ma[-2] < volume_last:
+            #        return None
+            else:
+                pass
+            break
+        else:
+            continue
+    # 종목, 날짜, 목표가, 주문총액, 주문종류, 주문상태, 당일최고가, 손전폭
+    trading_target_temp = [code_coin, datetime.today().strftime("%y%m%d"), target_price, value_order, 'buy', filter_value, today_high, stoploss]
     return trading_target_temp
 
 def cal_ma(data, method = 'sma', length=5):
@@ -254,6 +289,10 @@ def cal_ma(data, method = 'sma', length=5):
     else:
         raise ValueError('Check ma method')
     return ma_result
+
+def define_high_price(code_coin):
+    df_candle = pyupbit.get_ohlcv(code_coin, count=5)
+    return df_candle.high.iloc[-1]
 
 # -----------------------------------------------------------------------------
 # - Name : main_telegram
@@ -422,20 +461,18 @@ def run_trading(upbit_api, qreal, target, qlog):
                 target_coin = target[data['cd']]
             else:
                 continue
-            if target_coin[5]:
-                continue
-            if (target_coin[2] <= data['tp']*1.01)&(target_coin[2] >= data['tp']*0.999):
-                remaining_asset = upbit_api.get_balance('KRW')
-                order_value = target_coin[3]
-                if order_value > remaining_asset:
-                    # print(f'잔고부족으로 미실행\n{target_coin}')
-                    continue
-                else:
-                    # print(f'주문실행\n{target_coin}')
-                    rtn_order_buy = upbit_api.buy_market_order(target_coin[0],target_coin[3])
-                    logger.log(20, f'주문실행 \n{rtn_order_buy}')
-                    upbit.send_telegram_message(f'주문실행 \n{rtn_order_buy}')
-                    target_coin[5] = 1
+            #  더 높은 가격이면 저장하기
+            if data['tp'] > target_coin[6]:
+                target_coin[6] = data['tp']
+                target[data['cd']] = target_coin
+            #  이미 매수한 종목이면 매도해야하는지 확인
+            if target_coin[5] == 1:
+                if data['tp'] <= target_coin[6]*(1-target_coin[7])*1.001:
+                    balance = upbit_api.get_balance(target_coin[0])
+                    rtn_order_sell = upbit_api.sell_market_order(target_coin[0],balance)
+                    logger.log(20, f'매도주문실행 \n{rtn_order_sell}')
+                    upbit.send_telegram_message(f'매도주문실행 \n{rtn_order_sell}')
+                    target_coin[5] = 2
                     target[data['cd']] = target_coin
                     time.sleep(0.1)
                     # print('target 저장')
@@ -446,6 +483,36 @@ def run_trading(upbit_api, qreal, target, qlog):
                         file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
                     with open(file_target, 'wb') as handle:
                         pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+                continue
+            #  매수하지 않은 종목이면 가격으로 평가
+            elif target_coin[5]==0:
+                if (target_coin[2] <= data['tp']*1.01)&(target_coin[2] >= data['tp']*0.999):
+                    remaining_asset = upbit_api.get_balance('KRW')
+                    order_value = target_coin[3]
+                    if order_value > remaining_asset:
+                        # print(f'잔고부족으로 미실행\n{target_coin}')
+                        continue
+                    else:
+                        # print(f'주문실행\n{target_coin}')
+                        rtn_order_buy = upbit_api.buy_market_order(target_coin[0],target_coin[3])
+                        logger.log(20, f'매수주문실행 \n{rtn_order_buy}')
+                        upbit.send_telegram_message(f'매수주문실행 \n{rtn_order_buy}')
+                        target_coin[5] = 1
+                        target[data['cd']] = target_coin
+                        time.sleep(0.1)
+                        # print('target 저장')
+                        time1 = datetime.now()
+                        if int(time1.strftime("%H%M%S")) < 93000:
+                            file_target = f'./target/target_{(time1 - relativedelta(days=1)).strftime("%y%m%d")}.pickle'
+                        else:
+                            file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
+                        with open(file_target, 'wb') as handle:
+                            pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+            #  매수 후에 매도한 경우.
+            elif target_coin[5] == 2:
+                continue
+            else:
+                continue
 
 if __name__ == "__main__":
     qlog = mp.Queue()
