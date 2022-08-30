@@ -308,6 +308,11 @@ def main_telegram(upbit_api, target):
         dispatcher = updater.dispatcher
 
         # step3./start 명령어가 입력되었을 때의 함수 정의
+        # help 어떤 명령어가 있는지 확인.
+        def call_help(update, context):
+            msg = '/balance : 잔고조회\n/wait : 미체결조회\n/target : target조회\n/log : 당일 log출력\n/price target : target의 현재가 조회\n/price 종목코드 : 종목 현재가 조회'
+            context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
+
         # 잔고조회
         def call_balance(update, context):
             rtn_balances = upbit_api.get_balances()
@@ -364,6 +369,7 @@ def main_telegram(upbit_api, target):
         # def call_cancel_wait_order(update, context):
 
         # step4.위에서 정의한 함수를 실행할 CommandHandler 정의
+        help_handler = CommandHandler('help', call_help)
         balance_handler = CommandHandler('balance', call_balance)
         wait_handler = CommandHandler('wait', call_wait_order)
         target_handler = CommandHandler('target', call_target)
@@ -372,6 +378,7 @@ def main_telegram(upbit_api, target):
         # stop_handler = CommandHandler('stop', call_stop)
 
         # step5.Dispatcher에 Handler를 추가
+        dispatcher.add_handler(help_handler)
         dispatcher.add_handler(balance_handler)
         dispatcher.add_handler(wait_handler)
         dispatcher.add_handler(target_handler)
@@ -438,8 +445,12 @@ def run_trading(upbit_api, qreal, target, qlog):
                 for balance in balances:
                     code_coin = f'{balance["unit_currency"]}-{balance["currency"]}'
                     rtn_order_sell = upbit_api.sell_market_order(code_coin,balance['balance'])
-                    logger.log(20, f'보유종목 매도\n{rtn_order_sell}')
-                    upbit.send_telegram_message(f'보유종목 매도\n{rtn_order_sell}')
+                    time.sleep(0.5)
+                    rtn_order_result = upbit_api.get_order(rtn_order_sell['uuid'])
+                    rtn_order_result = rtn_order_result['trades']
+                    msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                    logger.log(20, f'보유종목 매도\n{rtn_order_result}')
+                    upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
                     time.sleep(0.1)
             else:
                 logger.log(20, '매도 대상 종목 없음')
@@ -447,8 +458,8 @@ def run_trading(upbit_api, qreal, target, qlog):
             target['STATUS'] = 0
         # qreal에 값이 들어올때까지 여기서 대기하다가 값 들어오면 그 다음 실행함.
         data = qreal.get()
-        if (int(datetime.now().strftime('%H%M%S'))>=90000)&(int(datetime.now().strftime('%H%M%S'))<=100100):
-            continue
+        # if (int(datetime.now().strftime('%H%M%S'))>=90000)&(int(datetime.now().strftime('%H%M%S'))<=100100):
+        #     continue
         if data['ty'] == 'trade':
             if not p1.is_alive() & p2.is_alive():
                 # print('child process 에러발생')
@@ -470,14 +481,18 @@ def run_trading(upbit_api, qreal, target, qlog):
                 if data['tp'] <= target_coin[6]*(1-target_coin[7])*1.001:
                     balance = upbit_api.get_balance(target_coin[0])
                     rtn_order_sell = upbit_api.sell_market_order(target_coin[0],balance)
-                    logger.log(20, f'매도주문실행 \n{rtn_order_sell}')
-                    upbit.send_telegram_message(f'매도주문실행 \n{rtn_order_sell}')
+                    time.sleep(0.5)
+                    rtn_order_result = upbit_api.get_order(rtn_order_sell['uuid'])
+                    rtn_order_result = rtn_order_result['trades']
+                    msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                    logger.log(20, f'보유종목 매도\n{rtn_order_result}')
+                    upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
                     target_coin[5] = 2
                     target[data['cd']] = target_coin
                     time.sleep(0.1)
                     # print('target 저장')
                     time1 = datetime.now()
-                    if int(time1.strftime("%H%M%S")) < 93000:
+                    if int(time1.strftime("%H%M%S")) <= 100000:
                         file_target = f'./target/target_{(time1 - relativedelta(days=1)).strftime("%y%m%d")}.pickle'
                     else:
                         file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
@@ -486,6 +501,9 @@ def run_trading(upbit_api, qreal, target, qlog):
                 continue
             #  매수하지 않은 종목이면 가격으로 평가
             elif target_coin[5]==0:
+                if (int(datetime.now().strftime('%H%M%S')) >= 90000) & (int(datetime.now().strftime('%H%M%S')) <= 100100):
+                    continue
+
                 if (target_coin[2] <= data['tp']*1.01)&(target_coin[2] >= data['tp']*0.999):
                     remaining_asset = upbit_api.get_balance('KRW')
                     order_value = target_coin[3]
@@ -495,8 +513,12 @@ def run_trading(upbit_api, qreal, target, qlog):
                     else:
                         # print(f'주문실행\n{target_coin}')
                         rtn_order_buy = upbit_api.buy_market_order(target_coin[0],target_coin[3])
-                        logger.log(20, f'매수주문실행 \n{rtn_order_buy}')
-                        upbit.send_telegram_message(f'매수주문실행 \n{rtn_order_buy}')
+                        time.sleep(0.5)
+                        rtn_order_result = upbit_api.get_order(rtn_order_buy['uuid'])
+                        rtn_order_result = rtn_order_result['trades']
+                        msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                        logger.log(20, f'매수주문 실행\n{rtn_order_result}')
+                        upbit.send_telegram_message(f'매수주문 실행\n{msg_result}')
                         target_coin[5] = 1
                         target[data['cd']] = target_coin
                         time.sleep(0.1)
