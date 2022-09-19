@@ -80,18 +80,19 @@ async def main_websocket(qreal,target,logger):
 # - Name : main_target
 # - Desc : 거래대상 생성 함수
 # -----------------------------------------------------------------------------
-def producer2(target, qlog):
+def producer2(target, qlog, target_trade):
     logger = upbit.Log().config_queue_log(qlog, 'target')
-    asyncio.run(main_target(target, logger))
+    asyncio.run(main_target(target, logger, target_trade))
 
-async def main_target(target, logger):
+async def main_target(target, logger, target_trade):
     try:
         # print('target 실행')
         logger.log(20,'target 실행')
         upbit.send_telegram_message('target 실행')
         making_trading_variables = wait_trading_variables(target, logger)
         making_target = wait_trading_target(target, logger)
-        await asyncio.gather(making_trading_variables, making_target)
+        making_target_trade = wait_trading_target_detail(target,logger,target_trade)
+        await asyncio.gather(making_trading_variables, making_target, making_target_trade)
     except Exception as e:
         # print('target Error')
     #     print(e)
@@ -227,6 +228,96 @@ async def wait_trading_target(target, logger):
             logger.log(20, '일자 잘못 설정되어 취소')
             sys.exit()
 
+async def wait_trading_target_detail(target, logger, target_trade):
+    try:
+        while True:
+            # target_trade가 없고 저장된 파일이 있으면 불러오는 함수
+            this_target_time = datetime.now().replace(minute=0, second=0)
+            file_target_detail = f'./target/target_{this_target_time.strftime("%y%m%d%H")}.pickle'
+            if len(target_trade) == 0:
+                if os.path.isfile(file_target_detail):
+                    logger.log(20,f'저장된 target 가져오기\n{file_target_detail}')
+                    upbit.send_telegram_message(f'저장된 target 가져오기\n{file_target_detail}')
+                    with open(file_target_detail, 'rb') as handle:
+                        target_trade_list = pickle.load(handle)
+                        for target_detail_temp in target_trade_list:
+                            target_trade.append(target_detail_temp)
+            next_target_time = (datetime.now()+relativedelta(hours=1)).replace(minute=0,second=0)
+            await asyncio.sleep((next_target_time - datetime.now()).total_seconds())
+            # {code_coin, uuid_buy, uuid_sell, status_no, start_time, value, buy_price, high_price, stoploss_ratio}
+            # coin_list 종목에 대해서 target_detail 생성. (함수 생성, value 정의)
+            for code_coin in target['list_coins']:
+                target_detail_temp = define_trading_target_detail(code_coin, target['value_per_trade'])
+                target_trade.append(target_detail_temp)
+            # target_trade 1일 이상 경과한 종목 제거
+            for i in range(len(target_trade)):
+                # 시간기준이 아니라 status 종료 기준으로 평가. (시간기준은 run_trading에서)
+                if int(datetime.now().strftime('%y%m%d%H')) - int(target_trade[i]['start_time']) >= 100:
+
+                    continue
+                else:
+                    target_trade = target_trade[i:]
+                    break
+            with open(file_target_detail,'wb') as handle:
+                pickle.dump(target_trade, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception as e:
+        logger.log(40, 'Exception Raised!')
+        logger.log(40, e)
+
+def define_trading_target_detail(code_coin, value):
+    start_time = int(datetime.now().strftime('%y%m%d%H'))
+    end_time = int((datetime.now()+relativedelta(hours=1)).replace(minute=0,second=0).strftime('%y%m%d%H'))
+    detail_temp = {'code_coin':code_coin,'uuid_buy':None,'uuid_sell':None,'status_no':None,'start_time':start_time,
+                   'end_time':end_time, 'value':None,'buy_price':None,'sell_price':None,'high_price':None,'stoploss_ratio':None}
+    df_candle = pyupbit.get_ohlcv(code_coin, interval='minute60', count=193)
+    if int(df_candle.index[-1].strftime('%y%m%d%H')) == start_time:
+        dict_ohlcv = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'value': 'sum', 'volume': 'sum'}
+        df_candle = df_candle.resample('24H', origin=df_candle.index[0]).apply(dict_ohlcv)
+        # range 계산
+        price_range = np.array(df_candle['high'] - df_candle['low'])[-2]
+        # k_value 정의
+        k_value = \
+        np.maximum(0.5, np.abs(df_candle['open'] - df_candle['close']) / (df_candle['high'] - df_candle['low']))[-2]
+        target_price = df_candle.close.iloc[-2] + k_value * price_range
+        open_price = df_candle.open.iloc[-1]
+        today_high = df_candle.high.iloc[-1]
+        target_vol = 0.1
+        stoploss = 0.1  # k_value * price_range / open_price
+        if stoploss <= target_vol:
+            value_order = value
+        else:
+            value_order = value / stoploss * target_vol
+        # filter 여부
+        filter_value = 0
+        noise_maximum = 0.4
+        noise_ma = cal_ma((df_candle.high - df_candle.close) / (df_candle.high - df_candle.low), method='sma', length=5)
+        volume_minimum = 100000000000
+        volume_ma = cal_ma(df_candle.value, method='sma', length=5)
+        price_last = df_candle.close[-2]
+        price_ma = cal_ma(df_candle.close, method='wma', length=8)
+        volume_last = df_candle.value[-2]
+        if filter_value:
+            pass
+        # elif noise_ma[-2] < noise_maximum:
+        #     filter_value = 3
+        # elif volume_ma[-2] < volume_minimum:
+        #     filter_value = 3
+        # elif volume_last < volume_minimum:
+        #     filter_value = 3
+        elif price_ma[-2] > price_last:
+            filter_value = 3
+        #    elif volume_ma[-2] < volume_last:
+        #        return None
+        else:
+            pass
+
+        detail_temp['status_no'] = filter_value
+        detail_temp['value'] = value_order
+        detail_temp['high_price'] = today_high
+        detail_temp['stoploss_ratio'] = stoploss
+    # {code_coin, uuid_buy, uuid_sell, status_no, start_time, end_time, value, buy_price, sell_price, high_price, stoploss_ratio}
+    return detail_temp
+
 def define_trading_target(code_coin, value):
     while True:
         df_candle = pyupbit.get_ohlcv(code_coin, count=30)
@@ -298,10 +389,10 @@ def define_high_price(code_coin):
 # - Name : main_telegram
 # - Desc : telegram 연결 관리 함수
 # -----------------------------------------------------------------------------
-def producer3(upbit_api, target):
-    main_telegram(upbit_api, target)
+def producer3(upbit_api, target, target_trade):
+    main_telegram(upbit_api, target, target_trade)
 
-def main_telegram(upbit_api, target):
+def main_telegram(upbit_api, target, target_trade):
     try:
         # step2.Updater(유저의 입력을 계속 모니터링하는 역할), Dispatcher
         updater = Updater(token=upbit.telegram_token, use_context=True)
@@ -310,7 +401,7 @@ def main_telegram(upbit_api, target):
         # step3./start 명령어가 입력되었을 때의 함수 정의
         # help 어떤 명령어가 있는지 확인.
         def call_help(update, context):
-            msg = '/balance : 잔고조회\n/wait : 미체결조회\n/target : target조회\n/log : 당일 log출력\n/price target : target의 현재가 조회\n/price 종목코드 : 종목 현재가 조회'
+            msg = '/balance : 잔고조회\n/wait : 미체결조회\n/target : target조회\n/target_trade : target_trade조회\n/log : 당일 log출력\n/price target : target의 현재가 조회\n/price 종목코드 : 종목 현재가 조회'
             context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
 
         # 잔고조회
@@ -334,6 +425,10 @@ def main_telegram(upbit_api, target):
         def call_target(update, context):
             msg = target
             context.bot.send_message(chat_id=update.effective_chat.id, text=f'<target 조회>\n{msg}')
+
+        def call_target_trade(update, context):
+            msg = target_trade
+            context.bot.send_message(chat_id=update.effective_chat.id, text=f'<target_trade 조회>\n{msg}')
 
         def call_log(update, context):
             f = open('./logs/log', 'r', encoding='utf-8')
@@ -373,6 +468,7 @@ def main_telegram(upbit_api, target):
         balance_handler = CommandHandler('balance', call_balance)
         wait_handler = CommandHandler('wait', call_wait_order)
         target_handler = CommandHandler('target', call_target)
+        target_trade_handler = CommandHandler('target_trade', call_target_trade)
         log_handler = CommandHandler('log', call_log)
         price_handler = CommandHandler('price', call_price)
         # stop_handler = CommandHandler('stop', call_stop)
@@ -382,13 +478,14 @@ def main_telegram(upbit_api, target):
         dispatcher.add_handler(balance_handler)
         dispatcher.add_handler(wait_handler)
         dispatcher.add_handler(target_handler)
+        dispatcher.add_handler(target_trade_handler)
         dispatcher.add_handler(log_handler)
         dispatcher.add_handler(price_handler)
         # dispatcher.add_handler(stop_handler)
 
         # step6.Updater 실시간 입력 모니터링 시작(polling 개념)
         updater.start_polling()
-    except:
+    except Exception as e:
         logger.log(40, 'Exception Raised!')
         logger.log(40, e)
 
@@ -396,7 +493,7 @@ def main_telegram(upbit_api, target):
 # - Name : run_trading
 # - Desc : 거래 실행 함수
 # -----------------------------------------------------------------------------
-def run_trading(upbit_api, qreal, target, qlog):
+def run_trading(upbit_api, qreal, target, qlog, target_trade):
     # print('거래실행')
     logger.log(20, '거래실행')
     upbit.send_telegram_message('거래실행')
@@ -409,8 +506,11 @@ def run_trading(upbit_api, qreal, target, qlog):
             upbit.send_telegram_message('child process 에러발생')
             listener.listener_end(qlog)
             sys.exit()
+        # target_trade관련
+        # status_no 확인하면서 매수, 매도 판단.
         # status에 따른 주문을 별도의 함수로 구성.
         if (target['STATUS'] == 1)or(target['STATUS'] == 11):
+            #
             # print('미체결 종목 취소 실행')
             logger.log(20, '미체결 종목 취소 실행')
             upbit.send_telegram_message('미체결 종목 취소 실행')
@@ -422,9 +522,10 @@ def run_trading(upbit_api, qreal, target, qlog):
                     else:
                         rtn_order_cancel = upbit_api.cancel_order(each_order['uuid'])
                         # print(f'미체결 종목 취소\n{rtn_order_cancel}')
+                        time.sleep(0.1)
                         logger.log(20, f'미체결 종목 취소\n{rtn_order_cancel}')
                         upbit.send_telegram_message(f'미체결 종목 취소\n{rtn_order_cancel}')
-                        time.sleep(0.1)
+
             else:
                 logger.log(20, '미체결 대상 종목 없음')
                 upbit.send_telegram_message('미체결 대상 종목 없음')
@@ -447,14 +548,16 @@ def run_trading(upbit_api, qreal, target, qlog):
                     rtn_order_sell = upbit_api.sell_market_order(code_coin,balance['balance'])
                     time.sleep(0.5)
                     rtn_order_result = upbit_api.get_order(rtn_order_sell['uuid'])
-                    rtn_order_result = rtn_order_result['trades']
-                    msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
-                    logger.log(20, f'보유종목 매도\n{rtn_order_result}')
-                    upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
+                    for rtn_order_result in rtn_order_result['trades']:
+                        msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                        logger.log(20, f'보유종목 매도\n{rtn_order_result}')
+                        upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
                     time.sleep(0.1)
             else:
                 logger.log(20, '매도 대상 종목 없음')
                 upbit.send_telegram_message('매도 대상 종목 없음')
+            rtn_daily = daily_return()
+            upbit.send_telegram_message(rtn_daily)
             target['STATUS'] = 0
         # qreal에 값이 들어올때까지 여기서 대기하다가 값 들어오면 그 다음 실행함.
         data = qreal.get()
@@ -481,15 +584,8 @@ def run_trading(upbit_api, qreal, target, qlog):
                 if data['tp'] <= target_coin[6]*(1-target_coin[7])*1.001:
                     balance = upbit_api.get_balance(target_coin[0])
                     rtn_order_sell = upbit_api.sell_market_order(target_coin[0],balance)
-                    time.sleep(0.5)
-                    rtn_order_result = upbit_api.get_order(rtn_order_sell['uuid'])
-                    rtn_order_result = rtn_order_result['trades']
-                    msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
-                    logger.log(20, f'보유종목 매도\n{rtn_order_result}')
-                    upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
                     target_coin[5] = 2
                     target[data['cd']] = target_coin
-                    time.sleep(0.1)
                     # print('target 저장')
                     time1 = datetime.now()
                     if int(time1.strftime("%H%M%S")) <= 100000:
@@ -498,6 +594,14 @@ def run_trading(upbit_api, qreal, target, qlog):
                         file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
                     with open(file_target, 'wb') as handle:
                         pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    # 매도 결과 저장.
+                    time.sleep(0.5)
+                    rtn_order_result = upbit_api.get_order(rtn_order_sell['uuid'])
+                    for rtn_order_result in rtn_order_result['trades']:
+                        msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                        logger.log(20, f'보유종목 매도\n{rtn_order_result}')
+                        upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
+                    time.sleep(0.1)
                 continue
             #  매수하지 않은 종목이면 가격으로 평가
             elif target_coin[5]==0:
@@ -513,12 +617,6 @@ def run_trading(upbit_api, qreal, target, qlog):
                     else:
                         # print(f'주문실행\n{target_coin}')
                         rtn_order_buy = upbit_api.buy_market_order(target_coin[0],target_coin[3])
-                        time.sleep(0.5)
-                        rtn_order_result = upbit_api.get_order(rtn_order_buy['uuid'])
-                        rtn_order_result = rtn_order_result['trades']
-                        msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
-                        logger.log(20, f'매수주문 실행\n{rtn_order_result}')
-                        upbit.send_telegram_message(f'매수주문 실행\n{msg_result}')
                         target_coin[5] = 1
                         target[data['cd']] = target_coin
                         time.sleep(0.1)
@@ -530,11 +628,57 @@ def run_trading(upbit_api, qreal, target, qlog):
                             file_target = f'./target/target_{time1.strftime("%y%m%d")}.pickle'
                         with open(file_target, 'wb') as handle:
                             pickle.dump(dict(target), handle, protocol=pickle.HIGHEST_PROTOCOL)
+                        # 매수결과 저장.
+                        time.sleep(0.5)
+                        rtn_order_result = upbit_api.get_order(rtn_order_buy['uuid'])
+                        for rtn_order_result in rtn_order_result['trades']:
+                            msg_result = f'종목 : {rtn_order_result["market"]}\n가격 : {rtn_order_result["price"]}\n거래량 : {rtn_order_result["volume"]}'
+                            logger.log(20, f'매수주문 실행\n{rtn_order_result}')
+                            upbit.send_telegram_message(f'매수주문 실행\n{msg_result}')
             #  매수 후에 매도한 경우.
             elif target_coin[5] == 2:
                 continue
             else:
                 continue
+
+def daily_return():
+    order_done = upbit_api.get_order_list(state='done')
+    order_cancel = upbit_api.get_order_list(state='cancel')
+    time_start = int((datetime.now()-relativedelta(days=1)).replace(hour=10, minute=0,second=1).strftime('%y%m%d%H%m'))
+    time_end = int((datetime.now()).replace(hour=10, minute=0,second=1).strftime('%y%m%d%H%m'))
+    trade_revenue = {}
+    trade_return = {}
+    for each_order in order_done+order_cancel:
+        time_temp = each_order['created_at']
+        time_temp = time_temp[2:4] + time_temp[5:7] + time_temp[8:10] + time_temp[14:16]+ time_temp[17:19]
+        if (int(time_temp) >= int(time_start))&(int(time_temp)<=int(time_end)):
+            result_temp = upbit_api.get_order(each_order['uuid'])
+            code = result_temp['market']
+            side = result_temp['side']
+            if (side=='ask') & (int(time_temp[6:]) >= 1000) & (int(time_temp[6:]) <= 1005):
+                continue
+            value = sum(float(result_temp['trades'][i]['price'])*float(result_temp['trades'][i]['volume']) for i in range(len(result_temp['trades'])))
+            if side == 'bid':
+                value = value*-1
+            fee = float(result_temp['paid_fee'])
+            value_fee = value-fee
+            if code in trade_return.keys():
+                trade_return[code] = trade_return[code] + value_fee
+            else:
+                trade_return[code] = value_fee
+            if side == 'bid':
+                if code in trade_revenue.keys():
+                    trade_revenue[code] = trade_revenue[code] - value
+                else:
+                    trade_revenue[code] = value*-1
+            #
+            # if (code not in trade_revenue.keys())&(side == 'bid'):
+            #     trade_revenue[code] = value*-1
+    msg_rtn = ''
+    for code_coin in trade_revenue.keys():
+        msg_rtn += f'{code_coin} : {trade_revenue[code_coin]:.1f}({trade_return[code_coin]:.1f}, {trade_return[code_coin]/trade_revenue[code_coin]*100:.2f}%) \n'
+    return msg_rtn
+
 
 if __name__ == "__main__":
     qlog = mp.Queue()
@@ -554,22 +698,23 @@ if __name__ == "__main__":
         qreal = mp.Queue()
         manager = mp.Manager()
         target = manager.dict({'STATUS':0, 'list_coins':[], 'value_per_trade':0, 'date':0})
+        target_trade = manager.list()
 
         upbit_api = pyupbit.Upbit(upbit.access_key, upbit.secret_key)
 
         p1 = mp.Process(name="Price_Receiver", target=producer1, args=(qreal, target, qlog), daemon=True)
         p1.start()
         logger.log(20, 'Websocket Process 실행')
-        p2 = mp.Process(name="Target_Receiver", target=producer2, args=(target, qlog), daemon=True)
+        p2 = mp.Process(name="Target_Receiver", target=producer2, args=(target, qlog, target_trade), daemon=True)
         p2.start()
         logger.log(20, 'target Process 실행')
-        p3 = mp.Process(name='Telegram', target=producer3, args=(upbit_api,target), daemon=True)
+        p3 = mp.Process(name='Telegram', target=producer3, args=(upbit_api,target, target_trade), daemon=True)
         p3.start()
         logger.log(20, 'telegram Process 실행')
 
         # asyncio.run(run_trading(real, target, qlog))
 
-        run_trading(upbit_api, qreal, target, qlog)
+        run_trading(upbit_api, qreal, target, qlog, target_trade)
 
     except KeyboardInterrupt:
         logger.log(40,"KeyboardInterrupt Exception 발생!")
