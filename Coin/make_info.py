@@ -5,8 +5,8 @@ import time
 
 
 status = 0
-# list_coin_code = ['KRW-BTC','KRW-ETH']
-list_coin_code = ['KRW-BTC','KRW-ETH','KRW-HIVE','KRW-AXS','KRW-ETC','KRW-HUNT','KRW-MVL','KRW-ADA']
+list_coin_code = ['KRW-BTC','KRW-ETH']
+# list_coin_code = ['KRW-BTC','KRW-ETH','KRW-HIVE','KRW-AXS','KRW-ETC','KRW-HUNT','KRW-MVL','KRW-ADA']
 # list_coin_code =pyupbit.get_tickers('KRW')
 # list_coin_code_new = []
 # for code_coin in list_coin_code:
