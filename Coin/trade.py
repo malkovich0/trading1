@@ -19,6 +19,8 @@ import pandas_ta as ta
 from telegram.ext import Updater
 from telegram.ext import CommandHandler
 
+from csv import DictWriter
+
 # -----------------------------------------------------------------------------
 # - Name : main_websocket
 # - Desc : 실시간 자료 수집함수
@@ -69,12 +71,35 @@ async def main_websocket(qreal,target,logger):
                 data = await websocket.recv()
                 data = json.loads(data)
                 qreal.put(data)
+                if data['ty'] == 'trade':
+                    code_coin = data['cd']
+                    str_month = datetime.now().strftime('%y%m')
+                    csv_file = f'./data/tickdata_{code_coin}_{str_month}.csv'
+                    save_to_csv(data, csv_file)
 
     except Exception as e:
         # print('websocket Error')
         logger.log(40, 'Exception Raised!')
         logger.log(40,e)
         await main_websocket(qreal, target, logger)
+
+def save_to_csv(dict_data, csv_file):
+    field_names = ['tp','tv','ab','td','ttm']
+    dict_data = {key:dict_data[key] for key in field_names}
+    if os.path.isfile(csv_file):
+        with open(csv_file, 'a') as f_object:
+            dictwriter_object = DictWriter(f_object, fieldnames=field_names)
+            dictwriter_object.writerow(dict_data)
+            f_object.close()
+    else:
+        field_names = dict_data.keys()
+        with open(csv_file, 'w') as f_object:
+            dictwriter_object = DictWriter(f_object, fieldnames=field_names)
+            dictwriter_object.writeheader()
+            dictwriter_object.writerow(dict_data)
+            f_object.close()
+
+
 
 # -----------------------------------------------------------------------------
 # - Name : main_target
@@ -91,8 +116,8 @@ async def main_target(target, logger, target_trade):
         upbit.send_telegram_message('target 실행')
         making_trading_variables = wait_trading_variables(target, logger)
         making_target = wait_trading_target(target, logger)
-        making_target_trade = wait_trading_target_detail(target,logger,target_trade)
-        await asyncio.gather(making_trading_variables, making_target, making_target_trade)
+        # making_target_trade = wait_trading_target_detail(target,logger,target_trade)
+        await asyncio.gather(making_trading_variables, making_target)
     except Exception as e:
         logger.log(40, 'Exception Raised!')
         logger.log(40, e)

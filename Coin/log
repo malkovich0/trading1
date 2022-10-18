@@ -1,8 +1,135 @@
-2022-08-03 09:10:01,666 target INFO 미체결 주문 취소
-2022-08-03 09:10:03,349 target INFO target date 변경 : 220803
-2022-08-03 09:10:03,350 target INFO target 종목 설정 : ['KRW-BTC', 'KRW-ETH']
-2022-08-03 09:10:10,880 target INFO target 저장
-{'STATUS': 1, 'list_coins': ['KRW-BTC', 'KRW-ETH'], 'value_per_trade': 20000, 'date': 220803, 'KRW-BTC': ['KRW-BTC', '220803', 31201500.0, 20000, 'buy', 1, nan, nan], 'KRW-ETH': ['KRW-ETH', '220803', 2253500.0, 20000, 'buy', 1, nan, nan]}
-2022-08-03 09:10:10,951 target INFO 보유 종목 매도 시점까지 대기 : 2022-08-03 10:00:00.460812
-2022-08-03 10:00:00,547 target INFO 보유종목 전량 매도
-2022-08-03 10:00:00,767 target INFO 다음 target 생성 시점까지 대기 : 2022-08-04 09:10:00.734464
+2022-10-07 09:10:00,602 target INFO 미체결 주문 취소
+2022-10-07 09:10:00,635 target INFO target date 변경 : 221007
+2022-10-07 09:10:00,635 target INFO target 종목 설정 : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 09:10:01,044 main INFO 미체결 종목 취소 실행
+2022-10-07 09:10:02,635 main INFO 미체결 대상 종목 없음
+2022-10-07 09:10:03,632 target INFO target 저장
+{'STATUS': 1, 'list_coins': ['KRW-BTC', 'KRW-ETH'], 'value_per_trade': 200000, 'date': 221007, 'KRW-BTC': ['KRW-BTC', '221007', 28738000.0, 200000, 'buy', 0, 28458000.0, 0.1], 'KRW-ETH': ['KRW-ETH', '221007', 1944750.0, 200000, 'buy', 0, 1926000.0, 0.1]}
+2022-10-07 09:10:03,636 target INFO 보유 종목 매도 시점까지 대기 : 2022-10-07 10:00:00.592736
+2022-10-07 10:00:00,614 target INFO 보유종목 전량 매도
+2022-10-07 10:00:00,700 target INFO 다음 target 생성 시점까지 대기 : 2022-10-08 09:10:00.699267
+2022-10-07 10:00:01,561 main INFO 보유종목 전량 매도
+2022-10-07 10:00:03,289 main INFO 보유종목 매도
+{'market': 'KRW-BTC', 'uuid': '155a8163-dc78-48a8-b25a-3fe16f5c314c', 'price': '28420000', 'volume': '0.00190116', 'funds': '54030.9672', 'trend': 'down', 'created_at': '2022-10-07T10:00:02+09:00', 'side': 'ask'}
+2022-10-07 10:00:04,352 main INFO 보유종목 매도
+{'market': 'KRW-BTC', 'uuid': '2730c8f2-0b71-44ba-8904-ab08396ca2ea', 'price': '28419000', 'volume': '0.00504617', 'funds': '143407.10523', 'trend': 'down', 'created_at': '2022-10-07T10:00:02+09:00', 'side': 'ask'}
+2022-10-07 10:00:06,036 main INFO 보유종목 매도
+{'market': 'KRW-ETH', 'uuid': 'b7765ced-bfcb-4071-8603-7252ab0a92ff', 'price': '1928000', 'volume': '0.10288065', 'funds': '198353.8932', 'trend': 'down', 'created_at': '2022-10-07T10:00:05+09:00', 'side': 'ask'}
+2022-10-07 10:00:08,150 main ERROR Exception 발생!
+2022-10-07 10:00:08,190 main ERROR Traceback (most recent call last):
+  File "trade.py", line 840, in <module>
+    run_trading(upbit_api, qreal, target, qlog, target_trade)
+  File "trade.py", line 640, in run_trading
+    upbit.send_telegram_message(rtn_daily)
+  File "/home/python/trade_bot/module/upbit.py", line 1288, in send_telegram_message
+    res = bot.sendMessage(chat_id=telegram_id, text=message)
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/bot.py", line 133, in decorator
+    result = func(*args, **kwargs)
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/bot.py", line 525, in send_message
+    return self._message(  # type: ignore[return-value]
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/bot.py", line 339, in _message
+    result = self._post(endpoint, data, timeout=timeout, api_kwargs=api_kwargs)
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/bot.py", line 298, in _post
+    return self.request.post(
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/utils/request.py", line 361, in post
+    result = self._request_wrapper(
+  File "/home/python/.local/lib/python3.8/site-packages/telegram/utils/request.py", line 279, in _request_wrapper
+    raise BadRequest(message)
+telegram.error.BadRequest: Message text is empty
+
+2022-10-07 10:01:05,177 main INFO main 실행
+2022-10-07 10:01:06,156 main INFO Websocket Process 실행
+2022-10-07 10:01:06,159 main INFO target Process 실행
+2022-10-07 10:01:06,162 main INFO telegram Process 실행
+2022-10-07 10:01:06,162 main INFO 거래실행
+2022-10-07 10:01:06,234 websocket INFO websocket 실행
+2022-10-07 10:01:06,237 target INFO target 실행
+2022-10-07 10:01:07,223 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-10-07 10:01:07,224 target INFO value_per_trade 재정의 : 0 -> 200000
+2022-10-07 10:01:07,225 target INFO 저장된 target 가져오기
+./target/target_221007.pickle
+2022-10-07 10:01:08,352 target INFO 다음 target 생성 시점까지 대기 : 2022-10-08 09:10:00.224758
+2022-10-07 10:01:18,317 websocket INFO target일자 확인 221007
+2022-10-07 10:01:28,328 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 10:01:28,395 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 10:01:29,429 main INFO 미체결 종목 취소 실행
+2022-10-07 10:01:30,437 main INFO 미체결 대상 종목 없음
+2022-10-07 10:01:40,340 main INFO 매수주문 실행
+{'market': 'KRW-ETH', 'uuid': 'd73987e0-64d6-4d59-9dc6-e788710ed01e', 'price': '1927500', 'volume': '0.10376134', 'funds': '199999.98285', 'trend': 'up', 'created_at': '2022-10-07T10:01:39+09:00', 'side': 'bid'}
+2022-10-07 10:24:19,042 main INFO 매수주문 실행
+{'market': 'KRW-BTC', 'uuid': '37d18912-d97a-4513-9a16-98418705ac28', 'price': '28459000', 'volume': '0.00702765', 'funds': '199999.89135', 'trend': 'up', 'created_at': '2022-10-07T10:24:18+09:00', 'side': 'bid'}
+2022-10-07 12:51:40,914 main ERROR Exception 발생!
+2022-10-07 12:51:40,919 main ERROR Traceback (most recent call last):
+  File "trade.py", line 840, in <module>
+    logger.log(20, 'main 실행')
+  File "trade.py", line 659, in run_trading
+    upbit.send_telegram_message(f'보유종목 매도\n{msg_result}')
+  File "<string>", line 2, in __len__
+  File "/usr/lib64/python3.8/multiprocessing/managers.py", line 834, in _callmethod
+    conn.send((self._id, methodname, args, kwds))
+  File "/usr/lib64/python3.8/multiprocessing/connection.py", line 210, in send
+    self._send_bytes(_ForkingPickler.dumps(obj))
+  File "/usr/lib64/python3.8/multiprocessing/connection.py", line 415, in _send_bytes
+    self._send(header + buf)
+  File "/usr/lib64/python3.8/multiprocessing/connection.py", line 372, in _send
+    n = write(self._handle, buf)
+BrokenPipeError: [Errno 32] Broken pipe
+
+2022-10-07 12:51:40,921 websocket ERROR Exception Raised!
+2022-10-07 12:51:40,922 websocket ERROR [Errno 32] Broken pipe
+2022-10-07 12:51:40,922 websocket INFO websocket 실행
+2022-10-07 12:51:41,876 websocket ERROR Exception Raised!
+2022-10-07 12:51:41,877 websocket ERROR [Errno 32] Broken pipe
+2022-10-07 12:51:41,877 websocket INFO websocket 실행
+2022-10-07 12:52:02,939 main INFO main 실행
+2022-10-07 12:52:03,959 main INFO Websocket Process 실행
+2022-10-07 12:52:03,962 main INFO target Process 실행
+2022-10-07 12:52:03,965 main INFO telegram Process 실행
+2022-10-07 12:52:03,965 main INFO 거래실행
+2022-10-07 12:52:03,968 websocket INFO websocket 실행
+2022-10-07 12:52:03,969 target INFO target 실행
+2022-10-07 12:52:05,066 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:05,066 target INFO value_per_trade 재정의 : 0 -> 200000
+2022-10-07 12:52:05,067 target INFO 저장된 target 가져오기
+./target/target_221007.pickle
+2022-10-07 12:52:06,084 target INFO 다음 target 생성 시점까지 대기 : 2022-10-08 09:10:00.067192
+2022-10-07 12:52:16,002 websocket INFO target일자 확인 221007
+2022-10-07 12:52:26,012 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:26,069 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:29,799 websocket ERROR Exception Raised!
+2022-10-07 12:52:29,799 websocket ERROR [Errno 2] No such file or directory: '/data/tickdata_KRW-ETH'
+2022-10-07 12:52:29,799 websocket INFO websocket 실행
+2022-10-07 12:52:30,797 websocket INFO target일자 확인 221007
+2022-10-07 12:52:40,802 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:40,849 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:42,864 websocket ERROR Exception Raised!
+2022-10-07 12:52:42,864 websocket ERROR [Errno 2] No such file or directory: '/data/tickdata_KRW-ETH'
+2022-10-07 12:52:42,864 websocket INFO websocket 실행
+2022-10-07 12:52:43,846 websocket INFO target일자 확인 221007
+2022-10-07 12:52:53,849 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:53,891 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:52:54,956 websocket ERROR Exception Raised!
+2022-10-07 12:52:54,956 websocket ERROR [Errno 2] No such file or directory: '/data/tickdata_KRW-BTC'
+2022-10-07 12:52:54,956 websocket INFO websocket 실행
+2022-10-07 12:52:55,958 websocket INFO target일자 확인 221007
+2022-10-07 12:53:05,966 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:53:06,026 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:53:07,077 websocket ERROR Exception Raised!
+2022-10-07 12:53:07,077 websocket ERROR [Errno 2] No such file or directory: '/data/tickdata_KRW-ETH'
+2022-10-07 12:53:07,077 websocket INFO websocket 실행
+2022-10-07 12:53:08,077 websocket INFO target일자 확인 221007
+2022-10-07 12:53:18,088 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:53:18,125 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:53:19,184 websocket ERROR Exception Raised!
+2022-10-07 12:53:19,184 websocket ERROR [Errno 2] No such file or directory: '/data/tickdata_KRW-ETH'
+2022-10-07 12:53:19,184 websocket INFO websocket 실행
+2022-10-07 12:53:20,193 websocket INFO target일자 확인 221007
+2022-10-07 12:53:30,204 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-10-07 12:53:30,240 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
