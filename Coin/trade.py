@@ -71,11 +71,11 @@ async def main_websocket(qreal,target,logger):
                 data = await websocket.recv()
                 data = json.loads(data)
                 qreal.put(data)
-                if data['ty'] == 'trade':
-                    code_coin = data['cd']
-                    str_month = datetime.now().strftime('%y%m')
-                    csv_file = f'./data/tickdata_{code_coin}_{str_month}.csv'
-                    save_to_csv(data, csv_file)
+                # if data['ty'] == 'trade':
+                #     code_coin = data['cd']
+                #     str_month = datetime.now().strftime('%y%m')
+                #     csv_file = f'./data/tickdata_{code_coin}_{str_month}.csv'
+                #     save_to_csv(data, csv_file)
 
     except Exception as e:
         # print('websocket Error')
@@ -116,8 +116,8 @@ async def main_target(target, logger, target_trade):
         upbit.send_telegram_message('target 실행')
         making_trading_variables = wait_trading_variables(target, logger)
         making_target = wait_trading_target(target, logger)
-        # making_target_trade = wait_trading_target_detail(target,logger,target_trade)
-        await asyncio.gather(making_trading_variables, making_target)
+        making_target_trade = wait_trading_target_detail(target,logger,target_trade)
+        await asyncio.gather(making_trading_variables, making_target, making_target_trade)
     except Exception as e:
         logger.log(40, 'Exception Raised!')
         logger.log(40, e)
@@ -269,8 +269,8 @@ async def wait_trading_target_detail(target, logger, target_trade):
             logger.log(20,f'target_detail대기 : {next_target_time}')
             await asyncio.sleep((next_target_time - datetime.now()).total_seconds())
             # 거래제외시간설정.
-            if int(next_target_time.strftime('%H')) in [9,10,11,12,13,14,15]:
-                continue
+            # if int(next_target_time.strftime('%H')) in [9,10,11,12,13,14,15]:
+            #     continue
             # {code_coin, uuid_buy, uuid_sell, status_no, start_time, value, buy_price, high_price, stoploss_ratio}
             # coin_list 종목에 대해서 target_detail 생성. (함수 생성, value 정의)
             for code_coin in target['list_coins']:
@@ -282,7 +282,7 @@ async def wait_trading_target_detail(target, logger, target_trade):
                 # 시간기준이 아니라 status 종료 기준으로 평가. (시간기준은 run_trading에서)
                 if target_trade[i]['status_no'] == 99:
                 # if int(datetime.now().strftime('%y%m%d%H')) - int(target_trade[i]['start_time']) >= 100:
-                    target_trade = target_trade[i+1:]
+                    target_trade[:] = target_trade[i+1:]
                 #     continue
                 else:
                 #     target_trade = target_trade[i:]
@@ -550,8 +550,8 @@ def call_buy_order(upbit_api, code_coin, value):
     return status_no, order_uuid
 
 def call_sell_order(upbit_api, code_coin, balance):
-    logger.log(20, f'detail매수주문 : {code_coin}, {balance}')
-    upbit.send_telegram_message(f'detail매수주문 : {code_coin}, {balance}')
+    logger.log(20, f'detail매도주문 : {code_coin}, {balance}')
+    upbit.send_telegram_message(f'detail매도주문 : {code_coin}, {balance}')
     # rtn_order_sell = upbit_api.sell_market_order(code_coin, balance)
     # time.sleep(0.5)
     # order_uuid = rtn_order_sell['uuid']
@@ -577,41 +577,41 @@ def run_trading(upbit_api, qreal, target, qlog, target_trade):
             upbit.send_telegram_message('child process 에러발생')
             listener.listener_end(qlog)
             sys.exit()
-    #     data = qreal.get()
-    #     if data['ty'] == 'trade':
-    #         code_coin = data['cd']
-    #         no_target_trade = len(target_trade)
-    #         for i in range(no_target_trade):
-    #             target_detail = target_trade[i].copy()
-    #             if target_detail['code_coin'] == code_coin:
-    #                 # 최근가가 고가면 저장하기.
-    #                 if data['tp'] > target_detail['high_price']:
-    #                     target_detail['high_price'] = data['tp']
-    #                 # 거래종료 시간 (매수상태면 매도하고 status_no=99. 매수전or매도면 status_no=99.)
-    #                 if target_detail['end_time'] <= int(datetime.now().strftime('%y%m%d%H')):
-    #                     if target_detail['status_no'] == 10:
-    #                         target_detail['status_no'], target_detail['uuid_sell'] = call_sell_order(upbit_api, target_detail['code_coin'], target_detail['balance'])
-    #                         target_detail['status_no'] = 99
-    #                     else:
-    #                         target_detail['status_no'] = 99
-    #                 # 주문 미실행.
-    #                 elif target_detail['status_no'] == 0:
-    #                     if (target_detail['buy_price'] <= data['tp']*1.01)&(target_detail['buy_price'] >= data['tp']*0.999):
-    #                         target_detail['status_no'], target_detail['uuid_buy'] = call_buy_order(upbit_api, target_detail['code_coin'], target_detail['value'])
-    #                         # 잔고평가해서 매수하고 메시지 남기는 함수 구성. rtn에 따라 매수했다면 status_no 변경.
-    #                 # 매수주문 상태. stoploss or sell_price
-    #                 elif target_detail['status_no'] == 10:
-    #                     if data['tp'] <= max(target_detail['sell_price'],
-    #                                          target_detail['high_price'] * (1 - target_detail['stoploss_ratio'])) * 1.001:
-    #                         target_detail['status_no'], target_detail['uuid_sell'] = call_sell_order(upbit_api,target_detail['code_coin'],target_detail['balance'])
-    #                 # 매도주문 상태.
-    #                 elif target_detail['status_no'] == 20:
-    #                     continue
-    #                 else:
-    #                     logger.log(20,f'status_no check\n{target_detail}')
-    #             else:
-    #                 continue
-    #             target_trade[i] = target_detail
+        data = qreal.get()
+        if data['ty'] == 'trade':
+            code_coin = data['cd']
+            no_target_trade = len(target_trade)
+            for i in range(no_target_trade):
+                target_detail = target_trade[i].copy()
+                if target_detail['code_coin'] == code_coin:
+                    # 최근가가 고가면 저장하기.
+                    if data['tp'] > target_detail['high_price']:
+                        target_detail['high_price'] = data['tp']
+                    # 거래종료 시간 (매수상태면 매도하고 status_no=99. 매수전or매도면 status_no=99.)
+                    if target_detail['end_time'] <= int(datetime.now().strftime('%y%m%d%H')):
+                        if target_detail['status_no'] == 10:
+                            target_detail['status_no'], target_detail['uuid_sell'] = call_sell_order(upbit_api, target_detail['code_coin'], target_detail['balance'])
+                            target_detail['status_no'] = 99
+                        else:
+                            target_detail['status_no'] = 99
+                    # 주문 미실행.
+                    elif target_detail['status_no'] == 0:
+                        if (target_detail['buy_price'] <= data['tp']*1.01)&(target_detail['buy_price'] >= data['tp']*0.999):
+                            target_detail['status_no'], target_detail['uuid_buy'] = call_buy_order(upbit_api, target_detail['code_coin'], target_detail['value'])
+                            # 잔고평가해서 매수하고 메시지 남기는 함수 구성. rtn에 따라 매수했다면 status_no 변경.
+                    # 매수주문 상태. stoploss or sell_price
+                    elif target_detail['status_no'] == 10:
+                        if data['tp'] <= max(target_detail['sell_price'],
+                                             target_detail['high_price'] * (1 - target_detail['stoploss_ratio'])) * 1.001:
+                            target_detail['status_no'], target_detail['uuid_sell'] = call_sell_order(upbit_api,target_detail['code_coin'],target_detail['balance'])
+                    # 매도주문 상태.
+                    elif target_detail['status_no'] == 20:
+                        continue
+                    else:
+                        logger.log(20,f'status_no check\n{target_detail}')
+                else:
+                    continue
+                target_trade[i] = target_detail
 
 
         # target_trade관련
