@@ -1,0 +1,18 @@
+2022-11-03 00:49:05,954 main INFO main 실행
+2022-11-03 00:49:07,115 main INFO Websocket Process 실행
+2022-11-03 00:49:07,118 main INFO target Process 실행
+2022-11-03 00:49:07,121 main INFO telegram Process 실행
+2022-11-03 00:49:07,121 main INFO 거래실행
+2022-11-03 00:49:07,127 target INFO target 실행
+2022-11-03 00:49:07,133 websocket INFO websocket 실행
+2022-11-03 00:49:08,261 target INFO list_coins 재정의 : [] -> ['KRW-BTC', 'KRW-ETH']
+2022-11-03 00:49:08,262 target INFO value_per_trade 재정의 : 0 -> 200000
+2022-11-03 00:49:08,263 target INFO target_detail대기 : 2022-11-03 09:00:00.262707
+2022-11-03 00:49:08,284 websocket INFO websocket 조회종목 (2) : ['KRW-BTC', 'KRW-ETH']
+2022-11-03 00:49:08,340 websocket INFO websocket 구독시작
+['KRW-BTC', 'KRW-ETH']
+2022-11-03 09:00:03,189 target INFO target_detail저장 : [{'code_coin': 'KRW-BTC', 'uuid_buy': None, 'uuid_sell': None, 'status_no': 99, 'start_time': 22110309, 'end_time': 22110409, 'value': 200000, 'balance': None, 'buy_price': 29031500.0, 'sell_price': 28232500.0, 'high_price': 28633000.0, 'stoploss_ratio': 0.03}]
+{'code_coin': 'KRW-BTC', 'uuid_buy': None, 'uuid_sell': None, 'status_no': 99, 'start_time': 22110309, 'end_time': 22110409, 'value': 200000, 'balance': None, 'buy_price': 29031500.0, 'sell_price': 28232500.0, 'high_price': 28633000.0, 'stoploss_ratio': 0.03}
+2022-11-03 09:00:03,344 target INFO target_detail저장 : [{'code_coin': 'KRW-BTC', 'uuid_buy': None, 'uuid_sell': None, 'status_no': 99, 'start_time': 22110309, 'end_time': 22110409, 'value': 200000, 'balance': None, 'buy_price': 29031500.0, 'sell_price': 28232500.0, 'high_price': 28633000.0, 'stoploss_ratio': 0.03}, {'code_coin': 'KRW-ETH', 'uuid_buy': None, 'uuid_sell': None, 'status_no': 99, 'start_time': 22110309, 'end_time': 22110409, 'value': 200000, 'balance': None, 'buy_price': 2231500.0, 'sell_price': 2082500.0, 'high_price': 2159000.0, 'stoploss_ratio': 0.03}]
+{'code_coin': 'KRW-ETH', 'uuid_buy': None, 'uuid_sell': None, 'status_no': 99, 'start_time': 22110309, 'end_time': 22110409, 'value': 200000, 'balance': None, 'buy_price': 2231500.0, 'sell_price': 2082500.0, 'high_price': 2159000.0, 'stoploss_ratio': 0.03}
+2022-11-03 09:00:03,353 target INFO target_detail대기 : 2022-11-04 09:00:00.352910
