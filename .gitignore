@@ -1,5 +1,9 @@
 Coin/info/
 Coin/logs/
+Coin/data/
+Coin/target/
 Coin/Untitled.ipynb
-Backtest/data
+Backtest/data/
+Backtest_Stock/data/
+Backtest_Stock/result/
 temp/
